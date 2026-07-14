@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Cloud9 SelfCheck — Kiosk (Workbench)</title>
+<style>
+  :root{
+    /* kiosk touch scale (docs/01 §4) */
+    --touch-min:48px; --touch-standard:56px; --touch-primary:72px;
+    --accent:#0d9488; --accent-dark:#0f766e; --accent-ink:#083c4a;
+    --surface:#ffffff; --surface-alt:#f5f8fa; --text:#0f172a; --text-2:#475569;
+    --line:rgba(15,23,42,.12); --danger:#b91c1c; --danger-bg:#fef2f2; --ok:#15803d; --ok-bg:#f0fdf4;
+    --menu-bg:#e6f2fb;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b1622;color:#dbe4ee;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+  /* ---- workbench demo bar (outside the kiosk canvas) ---- */
+  .demobar{width:100%;background:#0f2438;color:#cfe0ef;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;
+    padding:10px 16px;border-bottom:1px solid #1c3category;font-size:14px}
+  .demobar .grp{display:flex;align-items:center;gap:8px}
+  .demobar b{color:#fff}
+  .demobar select,.demobar button{min-height:38px;border-radius:8px;border:1px solid #2a4863;background:#16324b;color:#eaf2fa;
+    font:600 13px system-ui;padding:0 12px;cursor:pointer}
+  .demobar select:focus-visible,.demobar button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+  .demobar .resolved{background:#16324b;border-radius:999px;padding:6px 12px;display:inline-flex;gap:8px;align-items:center}
+  .demobar .sw{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.2)}
+  .demobar a{color:#8fd0ff;font-weight:600}
+
+  /* ---- kiosk frame ---- */
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;padding:18px;width:100%}
+  .frame{position:relative;background:var(--surface);border-radius:22px;overflow:hidden;
+    box-shadow:0 24px 70px rgba(0,0,0,.5);display:flex;flex-direction:column;
+    width:min(460px,94vw);height:min(840px,calc(100vh - 150px))}
+  .frame.landscape{width:min(900px,96vw);height:min(560px,calc(100vh - 150px))}
+  .app{position:absolute;inset:0;display:flex;flex-direction:column}
+
+  /* topbar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--surface);
+    border-bottom:1px solid var(--line);min-height:64px;gap:12px;z-index:5}
+  .topbar .brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--accent-ink);font-size:18px}
+  .topbar .brand .logo{width:30px;height:30px;border-radius:8px;background:conic-gradient(from 210deg,#0d9488,#2b6cb0,#0d9488)}
+  .topbar .clock{font-size:14px;color:var(--text-2);text-align:right;line-height:1.2}
+
+  .screen{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+  /* bottom nav */
+  .bottomnav{display:flex;background:var(--surface);border-top:1px solid var(--line);padding:6px}
+  .bottomnav button{flex:1;min-height:64px;border:0;background:transparent;border-radius:12px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--text-2);font:600 14px system-ui}
+  .bottomnav button:hover{background:var(--surface-alt)}
+  .bottomnav button:focus-visible{outline:3px solid var(--amber,#f59e0b);outline-offset:-3px}
+  .bottomnav .ic{font-size:22px;line-height:1}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:0;border-radius:14px;cursor:pointer;
+    font:700 20px system-ui;min-height:var(--touch-primary);padding:0 22px;background:var(--accent);color:#fff;
+    box-shadow:0 6px 18px rgba(13,148,136,.28);transition:transform .12s}
+  .btn:active{transform:scale(.98)}
+  .btn:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+  .btn.ghost{background:var(--surface);color:var(--accent-ink);border:2px solid var(--line);box-shadow:none}
+  .btn.block{width:100%}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+  .btn.danger{background:var(--danger)}
+
+  /* attract */
+  .attract{position:absolute;inset:0;cursor:pointer}
+  .attract canvas{position:absolute;inset:0;width:100%;height:100%}
+  .attract .content{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:space-between;padding:44px 28px;text-align:center}
+  .attract .brandwrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .attract .logo{width:64px;height:64px;border-radius:16px;background:conic-gradient(from 210deg,#0d9488,#2b6cb0,#0d9488);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+  .attract .libname{font-size:clamp(30px,7vw,52px);font-weight:900;letter-spacing:-.02em;line-height:1.05;margin-top:8px}
+  .attract .clock{font-size:20px;font-weight:600;opacity:.85}
+  .attract .cta{width:100%;max-width:560px;min-height:112px;border-radius:20px;border:0;cursor:pointer;
+    font:900 clamp(28px,6vw,46px)/1 system-ui;color:#fff;display:flex;align-items:center;justify-content:center;
+    padding:24px;box-shadow:0 12px 34px rgba(0,0,0,.28);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+  .attract .carousel{width:100%;max-width:560px;border-radius:18px;padding:22px;color:#fff;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);backdrop-filter:blur(6px)}
+  .attract .carousel h2{margin:0 0 4px;font-size:clamp(22px,4.5vw,32px);font-weight:800}
+  .attract .carousel p{margin:0;font-size:clamp(16px,3.5vw,22px);opacity:.92}
+  .dots{display:flex;gap:8px;justify-content:center;margin-top:14px;align-items:center}
+  .dots .d{height:10px;width:10px;border-radius:999px;background:rgba(255,255,255,.4)}
+  .dots .d.on{width:36px;background:#fff}
+  .pausebtn{min-width:44px;min-height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.4);
+    background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:16px;margin-left:6px}
+
+  /* home / main menu */
+  .home{min-height:100%;background:var(--menu-bg);padding:24px 20px 28px;display:flex;flex-direction:column}
+  .home h1{font-size:clamp(30px,6vw,40px);margin:6px 0 2px;color:#0f2438;text-align:center;font-weight:900}
+  .home .sub{text-align:center;color:#33465c;font-size:20px;margin:0 0 22px}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .tile{min-height:200px;border-radius:20px;border:0;cursor:pointer;color:#fff;padding:22px;text-align:left;
+    display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(145deg,var(--accent),var(--accent-dark));
+    box-shadow:0 10px 26px rgba(13,148,136,.28);transition:transform .12s}
+  .tile:active{transform:scale(.98)}
+  .tile:focus-visible{outline:3px solid #f59e0b;outline-offset:3px}
+  .tile .ic{font-size:48px}
+  .tile .lbl{font-size:clamp(22px,4.6vw,30px);font-weight:800;line-height:1.1}
+  .tiles.secondary{grid-template-columns:1fr 1fr;margin-top:14px}
+  .tile.s{min-height:120px;background:rgba(255,255,255,.9);color:#0f2438;box-shadow:0 4px 14px rgba(15,36,56,.12);
+    flex-direction:row;align-items:center;gap:14px;justify-content:flex-start}
+  .tile.s .ic{font-size:30px}
+  .tile.s .lbl{font-size:18px}
+
+  /* flow screens */
+  .page{padding:24px 22px 28px;min-height:100%}
+  .page h2{font-size:28px;margin:0 0 4px;color:var(--accent-ink);font-weight:900}
+  .page .lead{color:var(--text-2);font-size:19px;margin:0 0 22px}
+  .field{margin:0 0 16px}
+  .field label{display:block;font-weight:700;font-size:17px;margin-bottom:6px;color:var(--text)}
+  .field input{width:100%;min-height:var(--touch-standard);border:2px solid var(--line);border-radius:12px;
+    padding:0 16px;font-size:19px;background:#fff;color:var(--text)}
+  .field input:focus-visible{outline:3px solid #f59e0b;outline-offset:1px;border-color:var(--accent)}
+  .cardpick{display:grid;gap:12px;margin:0 0 18px}
+  .cardpick button{display:flex;align-items:center;gap:14px;min-height:var(--touch-primary);border:2px solid var(--line);
+    background:#fff;border-radius:14px;padding:12px 16px;cursor:pointer;text-align:left;font-size:18px;color:var(--text)}
+  .cardpick button:hover{border-color:var(--accent)}
+  .cardpick button:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+  .cardpick .av{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;
+    display:flex;align-items:center;justify-content:center;font-size:18px}
+  .muted{color:var(--text-2);font-size:15px}
+  .or{display:flex;align-items:center;gap:12px;color:var(--text-2);margin:16px 0;font-size:15px}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* item tray + list */
+  .tray{background:var(--surface-alt);border:1px dashed var(--line);border-radius:16px;padding:16px;margin-bottom:18px}
+  .tray .th{font-weight:700;font-size:16px;color:var(--text-2);margin-bottom:10px}
+  .covers{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+  .cover{flex:0 0 auto;width:62px;cursor:pointer;border:0;background:transparent;padding:0}
+  .cover .art{width:62px;height:88px;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.2);display:flex;align-items:flex-end;padding:6px;color:#fff;font-size:10px;font-weight:700;line-height:1.1}
+  .cover:focus-visible{outline:3px solid #f59e0b;outline-offset:2px;border-radius:8px}
+  .itemlist{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+  .item{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .item .art{width:36px;height:50px;border-radius:5px;flex:0 0 auto}
+  .item .tt{flex:1;min-width:0}
+  .item .tt .t{font-weight:700;font-size:17px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .tt .a{font-size:14px;color:var(--text-2)}
+  .item .stat{font-size:22px}
+  .item.err{border-color:#fca5a5;background:var(--danger-bg)}
+  .counts{display:flex;gap:10px;margin-bottom:16px}
+  .chip{background:var(--ok-bg);color:var(--ok);border-radius:999px;padding:8px 14px;font-weight:700;font-size:15px}
+  .chip.err{background:var(--danger-bg);color:var(--danger)}
+  .actionbar{display:flex;gap:12px;margin-top:8px}
+  .actionbar .btn{flex:1}
+
+  /* receipt */
+  .optrow{display:flex;align-items:center;gap:14px;min-height:var(--touch-primary);border:2px solid var(--line);
+    border-radius:14px;padding:12px 16px;margin-bottom:12px;cursor:pointer;background:#fff}
+  .optrow[aria-checked=true]{border-color:var(--accent);background:#f0fdfa}
+  .optrow .box{width:28px;height:28px;border-radius:8px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex:0 0 auto}
+  .optrow[aria-checked=true] .box{background:var(--accent);border-color:var(--accent)}
+  .optrow .tx{font-size:19px;font-weight:700;color:var(--text)}
+  .optrow .tx small{display:block;font-weight:500;font-size:14px;color:var(--text-2)}
+
+  /* success */
+  .success{padding:40px 24px;text-align:center;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+  .success .ring{width:120px;height:120px;border-radius:50%;background:var(--ok-bg);display:flex;align-items:center;justify-content:center;font-size:64px}
+  .success h2{font-size:34px;margin:0;color:var(--ok)}
+  .success p{font-size:19px;color:var(--text-2);margin:0}
+
+  /* account */
+  .acct-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .acct-tabs button{min-height:var(--touch-min);padding:0 16px;border-radius:999px;border:2px solid var(--line);
+    background:#fff;font:700 16px system-ui;color:var(--text-2);cursor:pointer}
+  .acct-tabs button[aria-selected=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* modal / panel */
+  .scrim{position:absolute;inset:0;background:rgba(8,20,32,.55);display:flex;align-items:flex-end;z-index:30}
+  .sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:22px;max-height:88%;overflow:auto}
+  .sheet h3{margin:0 0 14px;font-size:24px;color:var(--accent-ink)}
+  .a11y-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--touch-standard);
+    border-bottom:1px solid var(--line);padding:8px 0}
+  .a11y-row .lbl{font-size:19px;font-weight:700}
+  .switch{min-width:64px;min-height:var(--touch-min);border-radius:999px;border:2px solid var(--line);background:#fff;
+    cursor:pointer;font:700 15px system-ui;color:var(--text-2);padding:0 14px}
+  .switch[aria-checked=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .seg{display:inline-flex;border:2px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{min-height:var(--touch-min);padding:0 14px;border:0;background:#fff;font:700 15px system-ui;color:var(--text-2);cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+  .blocking .sheet{border-radius:20px;margin:auto;width:calc(100% - 40px);max-width:400px}
+  .scrim.center{align-items:center;justify-content:center}
+
+  /* high contrast */
+  .frame[data-hc=true]{--surface:#000;--surface-alt:#0a0a0a;--text:#fff;--text-2:#e5e5e5;--line:rgba(255,255,255,.6);
+    --menu-bg:#000;--accent:#fff;--accent-dark:#fff;--accent-ink:#fff}
+  .frame[data-hc=true] .btn{background:#fff;color:#000;box-shadow:none;border:2px solid #fff}
+  .frame[data-hc=true] .tile{background:#000;border:3px solid #fff;color:#fff}
+  .frame[data-hc=true] .topbar .brand,.frame[data-hc=true] .home h1{color:#fff}
+  .frame[data-hc=true] .bottomnav button{color:#fff}
+
+  /* text size */
+  .frame[data-ts="2"]{font-size:112%}
+  .frame[data-ts="3"]{font-size:130%}
+
+  @media (prefers-reduced-motion: reduce){ .attract .cta{animation:none} }
+  .frame[data-rm=true] .attract .cta{animation:none}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</head>
+<body data-surface="Kiosk">
+  <div class="demobar" role="region" aria-label="Workbench controls">
+    <span class="grp"><b>Workbench</b> · Kiosk surface</span>
+    <span class="grp"><label for="stationSel">Station</label>
+      <select id="stationSel"></select></span>
+    <span class="grp">Resolved theme: <span class="resolved" id="resolvedPill"></span></span>
+    <span class="grp"><button id="orientBtn" type="button">⟳ Rotate</button>
+      <button id="resetBtn" type="button">↺ Reset</button></span>
+    <span class="grp" style="margin-left:auto"><a href="../index.html">← Workbench home</a></span>
+  </div>
+
+  <div class="stage">
+    <div class="frame" id="frame" data-hc="false" data-rm="false" data-ts="1">
+      <div class="app" id="app"></div>
+      <div id="overlay"></div>
+    </div>
+  </div>
+
+<script src="../workbench-data/c9selfcheck-data.js"></script>
+<script src="../workbench-data/theme-engine.js"></script>
+<script src="../workbench-data/notes-sync.js"></script>
+<script>
+(function(){
+  var D=window.C9DATA, T=window.C9Theme;
+  var app=document.getElementById('app'), overlay=document.getElementById('overlay'), frame=document.getElementById('frame');
+  var params=new URLSearchParams(location.search);
+  var stationId=params.get('station')||'st-101';
+  T.ensureSeed(D.seed);
+
+  var state={
+    screen:'attract', flowStep:null, mode:null, patron:null,
+    items:[], slide:0, paused:false,
+    a11y:{hc:false, ts:1, rm:false},
+    renderer:null, slideTimer:null,
+  };
+  function station(){ return D.stations.find(function(s){return s.id===stationId;})||D.stations[0]; }
+  function resolvedTheme(){ return T.resolve(station().branchId, stationId); }
+  function catalogById(id){ return D.catalog.find(function(c){return c.id===id;}); }
+
+  /* ---------- demo bar ---------- */
+  var stationSel=document.getElementById('stationSel');
+  D.stations.forEach(function(s){ var o=document.createElement('option'); o.value=s.id; o.textContent=s.label+' — '+s.branchLabel; stationSel.appendChild(o); });
+  stationSel.value=stationId;
+  stationSel.addEventListener('change', function(){ stationId=this.value;
+    var u=new URL(location.href); u.searchParams.set('station',stationId); history.replaceState(null,'',u);
+    refreshResolved(); if(state.screen==='attract') renderAttract(); });
+  document.getElementById('orientBtn').addEventListener('click', function(){ frame.classList.toggle('landscape');
+    if(state.renderer) state.renderer.resize(); });
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    T.ensureSeed(D.seed, true);
+    refreshResolved(); if(state.screen==='attract') renderAttract(); });
+  function refreshResolved(){ var r=resolvedTheme(); var t=T.getTheme(r.id);
+    document.getElementById('resolvedPill').innerHTML='<span class="sw" style="background:'+t.swatches[0]+'"></span><b>'+t.label+'</b> · '+r.sourceLabel; }
+
+  /* ---------- helpers ---------- */
+  function coverStyle(c){ return 'background:linear-gradient(150deg,'+c.cover[0]+','+c.cover[1]+')'; }
+  function clock(){ var d=new Date(); return { t:d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+    d:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) }; }
+  function el(html){ var d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+  function go(screen, step){ state.screen=screen; state.flowStep=step||null; render(); }
+
+  /* ================= ATTRACT ================= */
+  function renderAttract(){
+    if(state.slideTimer) clearInterval(state.slideTimer);
+    var r=resolvedTheme(), theme=T.getTheme(r.id), a=theme.attract;
+    var st=station();
+    app.innerHTML='';
+    var wrap=el('<div class="attract" role="button" tabindex="0" aria-label="Touch anywhere to begin"></div>');
+    var cv=document.createElement('canvas'); wrap.appendChild(cv);
+    var content=el('<div class="content"></div>');
+    var slide=D.promoSlides[state.slide % D.promoSlides.length];
+    content.innerHTML=
+      '<div class="brandwrap">'+
+        '<div class="logo"></div>'+
+        '<div class="libname" style="color:'+a.textPrimary+'">'+D.brand.library+'</div>'+
+        '<div class="clock" style="color:'+a.textSecondary+'">'+clock().d+' · '+clock().t+'</div>'+
+      '</div>'+
+      '<button class="cta" style="background:'+theme.subPageAccent+'">Touch anywhere to begin</button>'+
+      '<div class="carwrap" style="width:100%;display:flex;flex-direction:column;align-items:center">'+
+        '<div class="carousel" style="background:linear-gradient(135deg,'+slide.grad[0]+'cc,'+slide.grad[1]+'99)">'+
+          '<h2>'+slide.title+'</h2><p>'+slide.body+'</p></div>'+
+        '<div class="dots">'+D.promoSlides.map(function(_,i){return '<span class="d'+(i===state.slide%D.promoSlides.length?' on':'')+'"></span>';}).join('')+
+          '<button class="pausebtn" data-no-begin aria-label="'+(state.paused?'Play slideshow':'Pause slideshow')+'" aria-pressed="'+state.paused+'">'+(state.paused?'▶':'❚❚')+'</button>'+
+        '</div>'+
+      '</div>';
+    wrap.appendChild(content);
+    app.appendChild(wrap);
+
+    // renderer
+    if(state.renderer) state.renderer.stop();
+    state.renderer=new T.AttractRenderer(cv, r.id, {reducedMotion: state.a11y.rm});
+    state.renderer.start();
+
+    function begin(e){ if(e && e.target && e.target.closest('[data-no-begin]')) return; startSession(); }
+    wrap.addEventListener('click', begin);
+    wrap.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();begin(e);} });
+    content.querySelector('.pausebtn').addEventListener('click', function(e){ e.stopPropagation(); state.paused=!state.paused; renderAttract(); });
+
+    if(!state.paused && !state.a11y.rm){
+      state.slideTimer=setInterval(function(){ state.slide++; renderAttract(); }, 10000);
+    }
+  }
+  function startSession(){ if(state.renderer){state.renderer.stop();state.renderer=null;} if(state.slideTimer)clearInterval(state.slideTimer); go('home'); }
+
+  /* ================= CHROME (topbar + nav) ================= */
+  function chrome(inner){
+    var c=clock();
+    var top='<div class="topbar"><div class="brand"><span class="logo"></span>'+D.brand.library+'</div>'+
+      '<div class="clock">'+c.t+'<br><span style="font-size:12px">'+c.d+'</span></div></div>';
+    var nav='<div class="bottomnav" role="navigation" aria-label="Kiosk navigation">'+
+      '<button data-nav="home"><span class="ic">🏠</span>Home</button>'+
+      '<button data-nav="help"><span class="ic">🛟</span>Help</button>'+
+      '<button data-nav="lang"><span class="ic">🌐</span>Language</button>'+
+      '<button data-nav="a11y"><span class="ic">♿</span>Access</button>'+
+      '<button data-nav="logout"><span class="ic">⤴</span>End</button></div>';
+    return top+'<div class="screen">'+inner+'</div>'+nav;
+  }
+  function bindChrome(){
+    [].forEach.call(app.querySelectorAll('[data-nav]'), function(b){
+      b.addEventListener('click', function(){
+        var n=b.getAttribute('data-nav');
+        if(n==='home') go('home');
+        else if(n==='logout') endSession();
+        else if(n==='a11y') openA11y();
+        else if(n==='help') openHelp();
+        else if(n==='lang') openLang();
+      });
+    });
+  }
+  function endSession(){ state.patron=null; state.items=[]; state.slide=0; go('attract'); }
+
+  /* ================= HOME ================= */
+  function renderHome(){
+    var prim=[['📤','Check Out','checkout'],['📥','Return','checkin'],['👤','My Account','account'],['🔎','Search','search']];
+    var sec=[['📅','Events'],['🚪','Reserve a Room'],['💳','Get a Card'],['🗺️','Branch Map']];
+    var tiles=prim.map(function(p){return '<button class="tile" data-tile="'+p[2]+'"><span class="ic" aria-hidden="true">'+p[0]+'</span><span class="lbl">'+p[1]+'</span></button>';}).join('');
+    var secs=sec.map(function(p){return '<button class="tile s"><span class="ic" aria-hidden="true">'+p[0]+'</span><span class="lbl">'+p[1]+'</span></button>';}).join('');
+    var body='<div class="home"><h1>Welcome</h1><p class="sub">How can we help you today?</p>'+
+      '<div class="tiles">'+tiles+'</div><div class="tiles secondary">'+secs+'</div></div>';
+    app.innerHTML=chrome(body); bindChrome();
+    [].forEach.call(app.querySelectorAll('[data-tile]'),function(b){ b.addEventListener('click',function(){
+      var t=b.getAttribute('data-tile');
+      if(t==='checkout'){ state.mode='checkout'; state.items=[]; go('checkout','auth'); }
+      else if(t==='checkin'){ state.mode='checkin'; state.items=[]; go('checkin','scan'); }
+      else if(t==='account'){ go('account','auth'); }
+      else if(t==='search'){ go('search'); }
+    });});
+  }
+
+  /* ================= AUTH (checkout / account) ================= */
+  function renderAuth(next){
+    var cards=D.patrons.map(function(p){ var initials=p.name.split(' ').map(function(x){return x[0];}).join('');
+      return '<button data-card="'+p.card+'"><span class="av">'+initials+'</span><span><span style="font-weight:700">'+p.name+'</span><br><span class="muted">Card •••• '+p.card.slice(-4)+'</span></span></button>'; }).join('');
+    var body='<div class="page"><h2>Scan your library card</h2><p class="lead">Place your card on the pad, or pick a demo patron below.</p>'+
+      '<div class="cardpick">'+cards+'</div>'+
+      '<div class="or">or enter your card number</div>'+
+      '<div class="field"><label for="cardNum">Library card number</label><input id="cardNum" inputmode="numeric" placeholder="21234•••••••••"></div>'+
+      '<button class="btn block" id="loginBtn">Log in</button></div>';
+    app.innerHTML=chrome(body); bindChrome();
+    [].forEach.call(app.querySelectorAll('[data-card]'),function(b){ b.addEventListener('click',function(){ authAs(b.getAttribute('data-card'), next); });});
+    app.querySelector('#loginBtn').addEventListener('click',function(){ var v=app.querySelector('#cardNum').value.trim(); authAs(v||D.patrons[0].card, next); });
+  }
+  function authAs(card, next){ state.patron=D.patrons.find(function(p){return p.card===card;})||D.patrons[0];
+    if(next==='checkout') go('checkout','scan'); else go('account','view'); }
+
+  /* ================= CHECKOUT / CHECKIN SCAN ================= */
+  function renderScan(){
+    var isOut=state.mode==='checkout';
+    var placed=state.items;
+    var tray=D.catalog.slice(0,8);
+    var covers=tray.map(function(c){return '<button class="cover" data-add="'+c.id+'" aria-label="Place '+c.title+' on the pad"><span class="art" style="'+coverStyle(c)+'">'+c.title.split(' ').slice(0,2).join(' ')+'</span></button>';}).join('');
+    var okCount=placed.filter(function(i){return !i.err;}).length;
+    var errCount=placed.filter(function(i){return i.err;}).length;
+    var list=placed.length? placed.map(function(i){var c=catalogById(i.id);
+      return '<div class="item'+(i.err?' err':'')+'"><span class="art" style="'+coverStyle(c)+'"></span>'+
+        '<span class="tt"><span class="t">'+c.title+'</span><span class="a">'+c.author+'</span></span>'+
+        '<span class="stat" aria-hidden="true">'+(i.err?'⚠️':'✅')+'</span>'+
+        '<span class="sr">'+(i.err?'needs staff attention':'success')+'</span></div>';}).join('')
+      : '<p class="muted" style="text-align:center;padding:20px 0">No items yet. Tap a cover above to simulate placing an item on the RFID pad.</p>';
+    var body='<div class="page"><h2>'+(isOut?'Place items on the pad':'Return items')+'</h2>'+
+      '<p class="lead">'+(isOut?'Set your items on the RFID pad one at a time.':'Place the items you are returning on the pad.')+'</p>'+
+      '<div class="tray"><div class="th">Simulate placing an item</div><div class="covers">'+covers+'</div></div>'+
+      (placed.length?'<div class="counts"><span class="chip">'+okCount+' '+(isOut?'checked out':'returned')+'</span>'+(errCount?'<span class="chip err">'+errCount+' need attention</span>':'')+'</div>':'')+
+      '<div class="itemlist">'+list+'</div>'+
+      '<button class="btn block" id="finishBtn"'+(placed.length?'':' disabled')+'>Finish</button></div>';
+    app.innerHTML=chrome(body); bindChrome();
+    [].forEach.call(app.querySelectorAll('[data-add]'),function(b){ b.addEventListener('click',function(){ addItem(b.getAttribute('data-add')); });});
+    var fb=app.querySelector('#finishBtn'); if(fb) fb.addEventListener('click', finishScan);
+  }
+  function addItem(id){ if(state.items.some(function(i){return i.id===id;})) return;
+    var c=catalogById(id); var err = state.mode==='checkout' && c.alert==='hold-other-patron';
+    state.items.push({id:id, err:err});
+    if(err){ openBlocking(c); } render(); }
+  function finishScan(){ var hasErr=state.items.some(function(i){return i.err;});
+    if(hasErr){ openErrorSummary(); return; }
+    go(state.mode, 'receipt'); }
+
+  /* ================= RECEIPT ================= */
+  var receiptChoice='print';
+  function renderReceipt(){
+    var isOut=state.mode==='checkout';
+    var opts=[['print','🖨️','Print receipt','A paper receipt'],['email','✉️','Email receipt','Send to your email'],['none','🚫','No receipt','Skip the receipt']];
+    var rows=opts.map(function(o){return '<div class="optrow" role="checkbox" tabindex="0" aria-checked="'+(receiptChoice===o[0])+'" data-opt="'+o[0]+'">'+
+      '<span class="box">'+(receiptChoice===o[0]?'✓':'')+'</span><span class="tx">'+o[1]+' '+o[2]+'<small>'+o[3]+'</small></span></div>';}).join('');
+    var emailField = receiptChoice==='email' ? '<div class="field"><label for="rcptEmail">Email address</label><input id="rcptEmail" type="email" value="'+((state.patron&&state.patron.email)||'')+'"></div>' : '';
+    var body='<div class="page"><h2>Receipt options</h2><p class="lead">'+(state.items.filter(function(i){return !i.err;}).length)+' '+(isOut?'items checked out':'items returned')+'. Choose how to get your receipt.</p>'+
+      rows+emailField+'<button class="btn block" id="doneBtn" style="margin-top:8px">'+(receiptChoice==='none'?'Done':'Send & finish')+'</button></div>';
+    app.innerHTML=chrome(body); bindChrome();
+    [].forEach.call(app.querySelectorAll('[data-opt]'),function(r){
+      function pick(){ receiptChoice=r.getAttribute('data-opt'); renderReceipt(); }
+      r.addEventListener('click',pick);
+      r.addEventListener('keydown',function(e){ if(e.key===' '||e.key==='Enter'){e.preventDefault();pick();} });
+    });
+    app.querySelector('#doneBtn').addEventListener('click',function(){ go(state.mode,'success'); });
+  }
+
+  /* ================= SUCCESS ================= */
+  function renderSuccess(){
+    var isOut=state.mode==='checkout';
+    var body='<div class="success"><div class="ring" aria-hidden="true">✅</div>'+
+      '<h2>'+(isOut?'All checked out!':'Returned — thank you!')+'</h2>'+
+      '<p>'+(state.items.filter(function(i){return !i.err;}).length)+' '+(isOut?'items are ready to go.':'items returned.')+'</p>'+
+      '<p class="muted">Returning to the welcome screen shortly…</p>'+
+      '<button class="btn" id="doneBtn2">Done</button></div>';
+    app.innerHTML=chrome(body); bindChrome();
+    app.querySelector('#doneBtn2').addEventListener('click', endSession);
+    clearTimeout(state._succTimer); state._succTimer=setTimeout(endSession, 8000);
+  }
+
+  /* ================= ACCOUNT ================= */
+  var acctTab='loans';
+  function renderAccount(){
+    if(state.flowStep==='auth'){ renderAuth('account'); return; }
+    var p=state.patron||D.patrons[0];
+    var tabs=[['loans','Loans'],['holds','Holds'],['fines','Fines']];
+    var tabbar=tabs.map(function(t){return '<button role="tab" aria-selected="'+(acctTab===t[0])+'" data-tab="'+t[0]+'">'+t[1]+'</button>';}).join('');
+    var content='';
+    if(acctTab==='loans'){ content=p.loans.map(function(l){var c=catalogById(l.id);
+      return '<div class="item"><span class="art" style="'+coverStyle(c)+'"></span><span class="tt"><span class="t">'+c.title+'</span><span class="a">Due '+l.due+(l.overdue?' · <b style="color:#b91c1c">OVERDUE</b>':'')+'</span></span></div>';}).join('')||'<p class="muted">No current loans.</p>'; }
+    else if(acctTab==='holds'){ content=p.holds.map(function(h){var c=catalogById(h.id);
+      return '<div class="item"><span class="art" style="'+coverStyle(c)+'"></span><span class="tt"><span class="t">'+c.title+'</span><span class="a">'+(h.ready?'<b style="color:#15803d">Ready for pickup</b>':'Position #'+h.position+' in queue')+'</span></span></div>';}).join('')||'<p class="muted">No holds.</p>'; }
+    else { content=(p.fines.length? p.fines.map(function(f){return '<div class="item"><span class="tt"><span class="t">'+f.desc+'</span></span><span style="font-weight:800;color:#b91c1c">$'+f.amount.toFixed(2)+'</span></div>';}).join('')+
+      '<p class="muted" style="margin-top:12px">Visit the circulation desk to pay fines.</p>' : '<p class="muted">No fines or fees. You\'re all clear!</p>'); }
+    var body='<div class="page"><h2>Hello, '+p.name.split(' ')[0]+'</h2><p class="lead">Card •••• '+p.card.slice(-4)+'</p>'+
+      '<div class="acct-tabs" role="tablist">'+tabbar+'</div><div class="itemlist">'+content+'</div></div>';
+    app.innerHTML=chrome(body); bindChrome();
+    [].forEach.call(app.querySelectorAll('[data-tab]'),function(b){ b.addEventListener('click',function(){ acctTab=b.getAttribute('data-tab'); renderAccount(); });});
+  }
+
+  /* ================= SEARCH (light) ================= */
+  function renderSearch(){
+    var body='<div class="page"><h2>Search the catalog</h2>'+
+      '<div class="field"><label for="q">Search for books, movies, music</label><input id="q" placeholder="Type a title or author"></div>'+
+      '<div class="itemlist" id="results"></div></div>';
+    app.innerHTML=chrome(body); bindChrome();
+    var results=app.querySelector('#results');
+    function draw(list){ results.innerHTML=list.map(function(c){return '<div class="item"><span class="art" style="'+coverStyle(c)+'"></span><span class="tt"><span class="t">'+c.title+'</span><span class="a">'+c.author+' · '+c.format+'</span></span></div>';}).join(''); }
+    draw(D.catalog.slice(0,6));
+    app.querySelector('#q').addEventListener('input',function(){ var v=this.value.toLowerCase();
+      draw(D.catalog.filter(function(c){return !v || c.title.toLowerCase().indexOf(v)>=0 || c.author.toLowerCase().indexOf(v)>=0;}).slice(0,8)); });
+  }
+
+  /* ================= OVERLAYS ================= */
+  function closeOverlay(){ overlay.innerHTML=''; }
+  function trapFocus(node){
+    var f=node.querySelectorAll('button,[href],input,select,[tabindex]:not([tabindex="-1"])');
+    if(!f.length) return; f[0].focus();
+    node.addEventListener('keydown',function(e){ if(e.key!=='Tab')return; var first=f[0],last=f[f.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();} });
+  }
+  function openBlocking(c){
+    overlay.innerHTML='<div class="scrim center blocking"><div class="sheet" role="alertdialog" aria-labelledby="blkT" aria-modal="true">'+
+      '<h3 id="blkT">⚠️ Item needs attention</h3>'+
+      '<p style="font-size:18px;color:#475569"><b>'+c.title+'</b> is on hold for another patron and can\'t be checked out here. Please set it aside and see a staff member.</p>'+
+      '<button class="btn block" id="blkOk">OK</button></div></div>';
+    var node=overlay.querySelector('.sheet'); overlay.querySelector('#blkOk').addEventListener('click',closeOverlay); trapFocus(node);
+  }
+  function openErrorSummary(){
+    var errs=state.items.filter(function(i){return i.err;}).map(function(i){return catalogById(i.id).title;});
+    overlay.innerHTML='<div class="scrim center blocking"><div class="sheet" role="alertdialog" aria-labelledby="esT" aria-modal="true">'+
+      '<h3 id="esT">Items need attention</h3><p style="font-size:17px;color:#475569">Please take these to the front desk:</p>'+
+      '<ul style="font-size:17px">'+errs.map(function(t){return '<li>'+t+'</li>';}).join('')+'</ul>'+
+      '<div class="actionbar"><button class="btn ghost" id="esBack">Back</button><button class="btn" id="esCont">Continue</button></div></div></div>';
+    var node=overlay.querySelector('.sheet');
+    overlay.querySelector('#esBack').addEventListener('click',closeOverlay);
+    overlay.querySelector('#esCont').addEventListener('click',function(){ closeOverlay(); state.items=state.items.filter(function(i){return !i.err;}); go(state.mode,'receipt'); });
+    trapFocus(node);
+  }
+  function openA11y(){
+    var a=state.a11y;
+    overlay.innerHTML='<div class="scrim"><div class="sheet" role="dialog" aria-labelledby="a11yT" aria-modal="true">'+
+      '<h3 id="a11yT">Accessibility</h3>'+
+      '<div class="a11y-row"><span class="lbl">High contrast</span><button class="switch" id="hc" role="switch" aria-checked="'+a.hc+'">'+(a.hc?'On':'Off')+'</button></div>'+
+      '<div class="a11y-row"><span class="lbl">Text size</span><span class="seg" role="group" aria-label="Text size">'+
+        '<button data-ts="1" aria-pressed="'+(a.ts===1)+'">A</button><button data-ts="2" aria-pressed="'+(a.ts===2)+'">A+</button><button data-ts="3" aria-pressed="'+(a.ts===3)+'">A++</button></span></div>'+
+      '<div class="a11y-row"><span class="lbl">Reduced motion</span><button class="switch" id="rm" role="switch" aria-checked="'+a.rm+'">'+(a.rm?'On':'Off')+'</button></div>'+
+      '<div class="a11y-row"><span class="lbl">Screen reader</span><button class="switch" id="sr" role="switch" aria-checked="false">Off</button></div>'+
+      '<button class="btn block" id="a11yClose" style="margin-top:16px">Done</button></div></div>';
+    var node=overlay.querySelector('.sheet');
+    overlay.querySelector('#hc').addEventListener('click',function(){ a.hc=!a.hc; applyA11y(); openA11y(); });
+    overlay.querySelector('#rm').addEventListener('click',function(){ a.rm=!a.rm; applyA11y(); openA11y(); });
+    [].forEach.call(overlay.querySelectorAll('[data-ts]'),function(b){ b.addEventListener('click',function(){ a.ts=+b.getAttribute('data-ts'); applyA11y(); openA11y(); });});
+    overlay.querySelector('#a11yClose').addEventListener('click',closeOverlay);
+    trapFocus(node);
+  }
+  function applyA11y(){ frame.setAttribute('data-hc',state.a11y.hc); frame.setAttribute('data-rm',state.a11y.rm); frame.setAttribute('data-ts',state.a11y.ts);
+    if(state.renderer){ state.renderer.reduced=state.a11y.rm; } }
+  function openHelp(){
+    overlay.innerHTML='<div class="scrim"><div class="sheet" role="dialog" aria-labelledby="hT" aria-modal="true">'+
+      '<h3 id="hT">Need a hand?</h3><p style="font-size:18px;color:#475569">A staff member is always nearby. Tap below and someone will come to help you.</p>'+
+      '<p style="font-size:16px;color:#475569">Front desk: (555) 000-1234</p>'+
+      '<div class="actionbar"><button class="btn ghost" id="hClose">Close</button><button class="btn" id="hCall">Call for help</button></div></div></div>';
+    var node=overlay.querySelector('.sheet');
+    overlay.querySelector('#hClose').addEventListener('click',closeOverlay);
+    overlay.querySelector('#hCall').addEventListener('click',function(){ node.innerHTML='<h3>Help is on the way</h3><p style="font-size:18px;color:#475569">A staff member has been notified and will be with you shortly.</p><button class="btn block" id="hOk">OK</button>'; node.querySelector('#hOk').addEventListener('click',closeOverlay); });
+    trapFocus(node);
+  }
+  function openLang(){
+    var langs=[['en','English'],['es','Español'],['fr','Français'],['de','Deutsch'],['ar','العربية'],['zh-CN','简体中文']];
+    overlay.innerHTML='<div class="scrim"><div class="sheet" role="dialog" aria-labelledby="lT" aria-modal="true">'+
+      '<h3 id="lT">Language</h3>'+langs.map(function(l){return '<div class="a11y-row"><span class="lbl">'+l[1]+'</span><button class="switch" data-lang="'+l[0]+'">Select</button></div>';}).join('')+
+      '<button class="btn block" id="lClose" style="margin-top:12px">Close</button></div></div>';
+    var node=overlay.querySelector('.sheet');
+    overlay.querySelector('#lClose').addEventListener('click',closeOverlay);
+    [].forEach.call(overlay.querySelectorAll('[data-lang]'),function(b){b.addEventListener('click',closeOverlay);});
+    trapFocus(node);
+  }
+
+  /* ================= ROUTER ================= */
+  function render(){
+    if(state.screen==='attract'){ renderAttract(); return; }
+    if(state.screen==='home'){ renderHome(); return; }
+    if(state.screen==='checkout'||state.screen==='checkin'){
+      if(state.flowStep==='auth'){ renderAuth('checkout'); return; }
+      if(state.flowStep==='scan'){ renderScan(); return; }
+      if(state.flowStep==='receipt'){ renderReceipt(); return; }
+      if(state.flowStep==='success'){ renderSuccess(); return; }
+    }
+    if(state.screen==='account'){ renderAccount(); return; }
+    if(state.screen==='search'){ renderSearch(); return; }
+  }
+
+  window.addEventListener('resize', function(){ if(state.renderer) state.renderer.resize(); });
+  window.addEventListener('storage', function(){ refreshResolved(); if(state.screen==='attract') renderAttract(); });
+
+  // Optional deep-link into a screen (reviewer convenience): ?screen=home|checkout|checkin|account|search
+  var wantScreen=params.get('screen');
+  if(wantScreen && wantScreen!=='attract'){
+    state.patron=D.patrons[0];
+    if(wantScreen==='checkout'){ state.mode='checkout'; state.screen='checkout'; state.flowStep='scan'; }
+    else if(wantScreen==='checkin'){ state.mode='checkin'; state.screen='checkin'; state.flowStep='scan'; }
+    else if(wantScreen==='account'){ state.screen='account'; state.flowStep='view'; }
+    else state.screen=wantScreen;
+  }
+  refreshResolved(); render();
+})();
+</script>
+</body>
+</html>

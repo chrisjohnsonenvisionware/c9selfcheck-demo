@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Cloud9 SelfCheck — Admin Console (Workbench)</title>
+<style>
+  :root{--ink:#0f2438;--slate:#123a5c;--blue:#2b6cb0;--amber:#f59e0b;--bg:#eef4f9;--card:#fff;--line:#dce6ef;--muted:#5b7085;
+    --ok:#15803d;--radius:14px;--shadow:0 10px 30px rgba(17,58,92,.10);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5}
+  a{color:var(--blue)}
+  .topnav{background:#fff;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;gap:12px}
+  .topnav .logo{width:28px;height:28px;border-radius:8px;background:conic-gradient(from 210deg,#0d9488,#2b6cb0,#0d9488)}
+  .topnav b{font-size:17px}
+  .topnav .tag{font-size:12px;font-weight:700;color:#fff;background:var(--blue);border-radius:999px;padding:3px 10px}
+  .topnav a{margin-left:auto;font-weight:600;font-size:14px}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 20px 80px}
+  .crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;color:var(--muted);margin-bottom:6px}
+  h1{font-size:26px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 22px}
+  .scopebar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+  .scopebar label{font-size:13px;font-weight:700;color:var(--muted);align-self:center}
+  select{min-height:44px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 12px;font:600 14px system-ui;color:var(--slate)}
+  select:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:20px}
+  .panel h2{margin:0 0 4px;font-size:20px}
+  .panel .h-blurb{color:var(--muted);font-size:14px;margin:0 0 18px}
+  .effective{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .bigthumb{width:220px;height:132px;border-radius:12px;overflow:hidden;border:1px solid var(--line);flex:0 0 auto;background:#0a1f2e}
+  .bigthumb canvas{width:100%;height:100%;display:block}
+  .eff-meta{flex:1;min-width:200px}
+  .eff-meta .name{font-size:24px;font-weight:800;color:var(--slate);display:flex;align-items:center;gap:10px}
+  .sw{width:18px;height:18px;border-radius:5px;border:1px solid rgba(0,0,0,.15)}
+  .badge{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:4px 10px;margin-top:8px}
+  .badge.inherit{background:#eef2f7;color:var(--muted)}
+  .badge.override{background:#fef3c7;color:#92400e}
+  .badge.station{background:#dbeafe;color:#1e40af}
+  .btnrow{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .btn{min-height:44px;padding:0 16px;border:1px solid var(--line);background:#fff;border-radius:10px;font:600 14px system-ui;color:var(--slate);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .btn:hover{background:#f1f7fc}
+  .btn:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .btn.primary{background:var(--slate);color:#fff;border-color:var(--slate)}
+  .btn.primary:hover{background:#0d2c47}
+
+  /* theme picker */
+  .picker{display:none;margin-top:18px;border-top:1px solid var(--line);padding-top:18px}
+  .picker.open{display:block}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .swatch-card{border:2px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;background:#fff;padding:0;text-align:left}
+  .swatch-card:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .swatch-card.sel{border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,108,176,.2)}
+  .swatch-card .mini{height:86px;position:relative;background:#0a1f2e}
+  .swatch-card .mini canvas{width:100%;height:100%;display:block}
+  .swatch-card .mini .check{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;display:none;align-items:center;justify-content:center;font-size:14px}
+  .swatch-card.sel .mini .check{display:flex}
+  .swatch-card .meta{padding:8px 10px}
+  .swatch-card .meta .nm{font-weight:700;font-size:15px;color:var(--slate)}
+  .swatch-card .meta .dots{display:flex;gap:4px;margin-top:5px}
+  .swatch-card .meta .dots span{width:12px;height:12px;border-radius:3px}
+
+  /* stations */
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);font-size:15px;vertical-align:middle}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  td .stn{font-weight:700;color:var(--slate)}
+  td .br{font-size:13px;color:var(--muted)}
+  .disp-only{background:#f8fbfe;border:1px dashed var(--line);border-radius:12px;padding:14px 16px}
+  .disp-only .dtag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;background:#eef2f7;border-radius:999px;padding:3px 8px}
+  .disp-only .r{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .disp-only .r:last-child{border-bottom:0}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--slate);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body data-surface="Admin console">
+  <div class="topnav"><span class="logo"></span><b>Cloud9 SelfCheck</b><span class="tag">Admin</span>
+    <a href="../index.html">← Workbench home</a></div>
+  <div class="wrap">
+    <div class="crumb" id="crumb"></div>
+    <h1>Attract screen & appearance</h1>
+    <p class="sub">Choose how your kiosks look when idle. Set one theme for your whole library, override it per branch, or per individual station.</p>
+
+    <div class="scopebar">
+      <label for="scopeSel">Editing scope</label>
+      <select id="scopeSel"></select>
+    </div>
+
+    <div class="panel">
+      <h2>Attract screen theme</h2>
+      <p class="h-blurb">The effective theme for the scope selected above.</p>
+      <div class="effective">
+        <div class="bigthumb"><canvas id="effThumb"></canvas></div>
+        <div class="eff-meta">
+          <div class="name" id="effName"></div>
+          <div id="effBadge"></div>
+          <div class="btnrow">
+            <button class="btn primary" id="changeBtn" aria-expanded="false">Change theme</button>
+            <button class="btn" id="revertBtn">Revert to inherited</button>
+            <button class="btn" id="previewBtn">Preview on kiosk ↗</button>
+          </div>
+        </div>
+      </div>
+      <div class="picker" id="picker"><div class="grid" id="pickerGrid"></div></div>
+    </div>
+
+    <div class="panel">
+      <h2>Your kiosks</h2>
+      <p class="h-blurb">Each station shows the theme it will display and where that setting comes from. Override an individual station when it needs its own look.</p>
+      <table><thead><tr><th>Station</th><th>Effective theme</th><th>Source</th><th></th></tr></thead>
+        <tbody id="stationRows"></tbody></table>
+    </div>
+
+    <div class="panel">
+      <h2>Other library settings</h2>
+      <p class="h-blurb">A glimpse of neighboring settings the library controls. Shown for context.</p>
+      <div class="disp-only">
+        <span class="dtag">Display only</span>
+        <div style="margin-top:10px">
+          <div class="r"><span>Receipt header text</span><b>Pioneer Library System</b></div>
+          <div class="r"><span>Show due dates on receipt</span><b>On</b></div>
+          <div class="r"><span>Success / error sounds</span><b>On</b></div>
+          <div class="r"><span>Idle timeout</span><b>45 seconds</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../workbench-data/c9selfcheck-data.js"></script>
+<script src="../workbench-data/theme-engine.js"></script>
+<script src="../workbench-data/notes-sync.js"></script>
+<script>
+(function(){
+  var D=window.C9DATA, T=window.C9Theme;
+  T.ensureSeed(D.seed);
+  // scope: {kind:'library'|'branch'|'station', id, libKey (branchId used as override node), stationId}
+  var scopes=[];
+  scopes.push({kind:'library', id:'pioneer', label:'Pioneer Library System (all branches)'});
+  D.tree.children[0].children.forEach(function(br){
+    scopes.push({kind:'branch', id:br.id, label:'— '+br.label});
+    br.children.forEach(function(st){ scopes.push({kind:'station', id:st.id, branchId:br.branchId||br.id, label:'   • '+st.label}); });
+  });
+  // fix branchId for stations
+  scopes.forEach(function(s){ if(s.kind==='station'){ var stn=D.stations.find(function(x){return x.id===s.id;}); s.branchId=stn.branchId; }});
+  var current=scopes[0], pickerOpen=false;
+
+  var scopeSel=document.getElementById('scopeSel');
+  scopes.forEach(function(s,i){ var o=document.createElement('option'); o.value=i; o.textContent=s.label; scopeSel.appendChild(o); });
+  scopeSel.addEventListener('change', function(){ current=scopes[+this.value]; pickerOpen=false; render(); });
+
+  function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},1500); }
+  function swatch(id){ return '<span class="sw" style="background:'+T.getTheme(id).swatches[0]+'"></span>'; }
+
+  // Resolve the effective theme + where it comes from, for the current scope.
+  function effectiveForScope(){
+    var root=T.getRoot();
+    if(current.kind==='library'){ return {id:root, src:'root'}; }
+    if(current.kind==='branch'){ var b=T.getLibrary(current.id); return b?{id:b,src:'branch'}:{id:root,src:'root'}; }
+    // station
+    var st=T.getStation(current.id); if(st) return {id:st,src:'station'};
+    var br=T.getLibrary(current.branchId); if(br) return {id:br,src:'branch'};
+    return {id:root,src:'root'};
+  }
+  function currentOwnValue(){
+    if(current.kind==='library') return T.getRoot();
+    if(current.kind==='branch') return T.getLibrary(current.id);
+    return T.getStation(current.id);
+  }
+  function setOwnValue(id){
+    if(current.kind==='library') T.setRoot(id||T.DEFAULT_THEME_ID);
+    else if(current.kind==='branch') T.setLibrary(current.id, id);
+    else T.setStation(current.id, id);
+  }
+
+  function render(){
+    document.getElementById('crumb').innerHTML='Pioneer Library System'+(current.kind!=='library'?' › '+current.label.replace(/[—•]/g,'').trim():'');
+    var eff=effectiveForScope(), theme=T.getTheme(eff.id);
+    // big thumbnail
+    var tc=document.getElementById('effThumb'); T.drawThumbnail(tc, eff.id, true);
+    document.getElementById('effName').innerHTML=swatch(eff.id)+theme.label;
+    var badge=document.getElementById('effBadge');
+    var own=currentOwnValue();
+    if(current.kind==='library'){ badge.innerHTML='<span class="badge override">Set as the library default</span>'; }
+    else if(own){ badge.innerHTML='<span class="badge '+(current.kind==='station'?'station':'override')+'">Overridden at this '+current.kind+'</span>'; }
+    else { badge.innerHTML='<span class="badge inherit">Inherited from '+(eff.src==='branch'?'branch':'EnvisionWare default')+'</span>'; }
+    // revert button availability
+    document.getElementById('revertBtn').style.display = (current.kind!=='library' && own) ? '' : 'none';
+
+    // picker
+    var picker=document.getElementById('picker'); picker.classList.toggle('open', pickerOpen);
+    document.getElementById('changeBtn').setAttribute('aria-expanded', String(pickerOpen));
+    if(pickerOpen) renderPicker(eff.id);
+
+    renderStations();
+  }
+
+  function renderPicker(selId){
+    var grid=document.getElementById('pickerGrid'); grid.innerHTML='';
+    T.THEMES.forEach(function(t){
+      var card=document.createElement('button'); card.className='swatch-card'+(t.id===selId?' sel':''); card.type='button';
+      card.setAttribute('aria-label','Use '+t.label+' theme'); card.setAttribute('aria-pressed', String(t.id===selId));
+      card.innerHTML='<div class="mini"><canvas></canvas><span class="check">✓</span></div>'+
+        '<div class="meta"><div class="nm">'+t.label+'</div><div class="dots">'+
+        t.swatches.map(function(s){return '<span style="background:'+s+'"></span>';}).join('')+'</div></div>';
+      grid.appendChild(card);
+      T.drawThumbnail(card.querySelector('canvas'), t.id, true);
+      card.addEventListener('click', function(){ setOwnValue(t.id); pickerOpen=false; toast(t.label+' applied'); render(); });
+    });
+  }
+
+  function renderStations(){
+    var tbody=document.getElementById('stationRows'); tbody.innerHTML='';
+    D.stations.forEach(function(s){
+      var r=T.resolve(s.branchId, s.id), theme=T.getTheme(r.id);
+      var srcTxt = r.source==='station'?'<span class="badge station">Station override</span>'
+        : r.source==='library'?'<span class="badge override">Branch override</span>'
+        : '<span class="badge inherit">Library default</span>';
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td><span class="stn">'+s.label+'</span><br><span class="br">'+s.branchLabel+'</span></td>'+
+        '<td>'+swatch(r.id)+theme.label+'</td>'+
+        '<td>'+srcTxt+'</td>'+
+        '<td style="text-align:right"><button class="btn" data-jump="'+s.id+'">Edit</button> '+
+        '<button class="btn" data-prev="'+s.id+'">Preview ↗</button></td>';
+      tbody.appendChild(tr);
+    });
+    [].forEach.call(tbody.querySelectorAll('[data-jump]'),function(b){ b.addEventListener('click',function(){
+      var id=b.getAttribute('data-jump'); var idx=scopes.findIndex(function(x){return x.kind==='station'&&x.id===id;});
+      current=scopes[idx]; scopeSel.value=idx; pickerOpen=true; render(); window.scrollTo({top:0,behavior:'smooth'});
+    });});
+    [].forEach.call(tbody.querySelectorAll('[data-prev]'),function(b){ b.addEventListener('click',function(){
+      window.open('../kiosk/index.html?station='+b.getAttribute('data-prev'),'_blank'); });});
+  }
+
+  document.getElementById('changeBtn').addEventListener('click', function(){ pickerOpen=!pickerOpen; render(); });
+  document.getElementById('revertBtn').addEventListener('click', function(){ setOwnValue(null); toast('Reverted to inherited'); render(); });
+  document.getElementById('previewBtn').addEventListener('click', function(){
+    var sid = current.kind==='station'?current.id:(current.kind==='branch'? (D.stations.find(function(x){return x.branchId===current.id;})||{}).id : 'st-101');
+    window.open('../kiosk/index.html?station='+(sid||'st-101'),'_blank'); });
+
+  window.addEventListener('storage', render);
+  render();
+})();
+</script>
+</body>
+</html>

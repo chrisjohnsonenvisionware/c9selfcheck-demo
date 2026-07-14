@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Cloud9 RFID SelfCheck — Model Workbench</title>
+<style>
+  :root{
+    --ink:#0f2438; --slate:#123a5c; --blue:#2b6cb0; --amber:#f59e0b;
+    --bg:#eef4f9; --card:#ffffff; --line:#dce6ef; --muted:#5b7085;
+    --shadow:0 10px 30px rgba(17,58,92,.10);
+    --radius:16px;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#e6f2fb,#eef4f9 340px);color:var(--ink);line-height:1.5}
+  a{color:var(--blue)}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 96px}
+  header.hero{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--blue);font-size:14px;letter-spacing:.02em}
+  .kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--amber)}
+  h1{margin:2px 0 0;font-size:clamp(28px,4.4vw,44px);letter-spacing:-.02em;line-height:1.1}
+  .lede{max-width:70ch;color:var(--muted);font-size:17px;margin:8px 0 0}
+  .powered{font-size:13px;color:var(--muted);margin-top:2px}
+  .powered b{color:var(--slate)}
+
+  section{margin-top:34px}
+  .sec-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 14px}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    text-decoration:none;color:inherit;display:flex;flex-direction:column;overflow:hidden;transition:transform .15s,box-shadow .15s}
+  .card:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(17,58,92,.16)}
+  .card:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .card.star{grid-column:1 / -1}
+  .thumb{height:150px;position:relative;background:#0a1f2e}
+  .card.star .thumb{height:210px}
+  .thumb canvas{width:100%;height:100%;display:block}
+  .thumb .frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .who{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);color:var(--slate);
+    font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px}
+  .card-bd{padding:16px 18px 18px}
+  .card-bd h3{margin:0 0 4px;font-size:20px}
+  .card.star .card-bd h3{font-size:24px}
+  .card-bd p{margin:0;color:var(--muted);font-size:15px}
+  .go{margin-top:12px;font-weight:600;color:var(--blue);font-size:14px}
+
+  /* config story strip */
+  .story{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+  .flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:stretch;gap:8px}
+  .node{border:1px solid var(--line);border-radius:12px;padding:14px;background:#f8fbfe;display:flex;flex-direction:column;gap:6px}
+  .node .lvl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .node .val{font-size:17px;font-weight:700;color:var(--slate);display:flex;align-items:center;gap:8px}
+  .node .sw{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.15)}
+  .node .state{font-size:12px}
+  .node.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(43,108,176,.15)}
+  .node.active .state{color:var(--blue);font-weight:700}
+  .node .state.inherit{color:#94a3b8}
+  .arrow{display:flex;align-items:center;color:#b9c9d6;font-size:22px}
+  .story-ft{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:16px}
+  .resolved{font-size:15px;color:var(--muted)}
+  .resolved b{color:var(--ink)}
+  .btn{min-height:44px;padding:0 16px;border:1px solid var(--line);background:#fff;border-radius:10px;
+    font:600 14px system-ui;color:var(--slate);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .btn:hover{background:#f1f7fc}
+  .btn:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .btn.primary{background:var(--slate);color:#fff;border-color:var(--slate)}
+  .station-tabs{display:inline-flex;gap:6px}
+  .station-tabs button{min-height:36px;padding:0 12px;border:1px solid var(--line);background:#fff;border-radius:999px;font:600 13px system-ui;color:var(--muted);cursor:pointer}
+  .station-tabs button[aria-pressed=true]{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+  /* walkthrough */
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:12px}
+  ol.steps li{counter-increment:s;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px 14px 56px;position:relative}
+  ol.steps li::before{content:counter(s);position:absolute;left:14px;top:14px;width:28px;height:28px;border-radius:50%;
+    background:var(--blue);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  ol.steps b{color:var(--slate)}
+  ol.steps span{color:var(--muted)}
+
+  .foot{margin-top:36px;display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:center;
+    padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+  .foot a{font-weight:600}
+  @media (max-width:720px){ .cards{grid-template-columns:1fr} .flow{grid-template-columns:1fr;gap:8px}
+    .arrow{justify-content:center;transform:rotate(90deg)} }
+</style>
+</head>
+<body data-surface="Landing">
+<div class="wrap">
+  <header class="hero">
+    <span class="kicker"><span class="dot"></span>Model Workbench</span>
+    <h1>Cloud9 RFID SelfCheck</h1>
+    <p class="lede">A clickable review artifact for the redesigned self-service kiosk — the new attract screen,
+      bigger touch targets, a WCAG 2.2 patron flow, and a configurable theme that professional services and
+      libraries both control. This is a design preview, not the shipping product.</p>
+    <p class="powered">Powered by <b>EnvisionWare</b> · fully self-contained · state lives in your browser</p>
+  </header>
+
+  <section>
+    <p class="sec-title">Four surfaces</p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section>
+    <p class="sec-title">How the theme is decided</p>
+    <div class="story">
+      <div class="flow" id="flow"></div>
+      <div class="story-ft">
+        <span class="resolved" id="resolved"></span>
+        <span style="flex:1"></span>
+        <span class="station-tabs" id="stationTabs" role="group" aria-label="Preview station"></span>
+        <button class="btn" id="resetBtn" type="button">↺ Reset demo data</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-title">Try this — the inheritance story in four moves</p>
+    <ol class="steps" id="steps"></ol>
+  </section>
+
+  <div class="foot">
+    <span>Design docs bundled under <a href="docs/">/docs</a> · use the Notes button to jot review feedback and copy it back into chat.</span>
+    <span><a href="#" id="copyNotes">Copy all notes for Claude →</a></span>
+  </div>
+</div>
+
+<script src="workbench-data/c9selfcheck-data.js"></script>
+<script src="workbench-data/theme-engine.js"></script>
+<script src="workbench-data/notes-sync.js"></script>
+<script>
+(function(){
+  var D = window.C9DATA, T = window.C9Theme;
+  var previewStation = 'st-101';
+
+  T.ensureSeed(D.seed);
+
+  var SURFACES = [
+    { href:'kiosk/index.html?station=st-101', who:'For patrons', title:'Kiosk — attract & self-check', star:true,
+      desc:'The redesigned patron experience: new attract screen, enlarged targets, and the full check-out / return / account flow built to WCAG 2.2.', thumb:'kiosk' },
+    { href:'admin/index.html', who:'For library staff', title:'Admin console',
+      desc:'The library\'s view — pick the attract theme, override it per branch or per station, and preview it on a kiosk.', thumb:'admin' },
+    { href:'backend/index.html', who:'For EnvisionWare PS', title:'Backend console',
+      desc:'The Cloud9 SelfCheck Settings page — collapsible sections, "Find a Setting", scope chevrons, with the new Attract Screen section slotted in.', thumb:'backend' },
+    { href:'docs/', who:'Reference', title:'Design docs',
+      desc:'The design direction, theme specs, configuration model, and workbench spec that define this build.', thumb:'docs' },
+  ];
+
+  var cards = document.getElementById('cards');
+  SURFACES.forEach(function(s){
+    var a = document.createElement('a');
+    a.className = 'card' + (s.star ? ' star' : '');
+    a.href = s.href;
+    a.innerHTML = '<div class="thumb"><span class="who">'+s.who+'</span></div>' +
+      '<div class="card-bd"><h3>'+s.title+'</h3><p>'+s.desc+'</p><div class="go">Open '+(s.star?'the kiosk':'→')+'</div></div>';
+    cards.appendChild(a);
+    var thumb = a.querySelector('.thumb');
+    if (s.thumb === 'kiosk'){
+      var cv = document.createElement('canvas'); cv.style.width='100%'; cv.style.height='100%'; thumb.insertBefore(cv, thumb.firstChild);
+      requestAnimationFrame(function(){ var r = new T.AttractRenderer(cv, 'horizon', {}); r.start();
+        var io=new IntersectionObserver(function(es){es.forEach(function(e){e.isIntersecting?r.start():r.stop();});}); io.observe(cv); });
+    } else {
+      thumb.style.background = s.thumb==='admin' ? 'linear-gradient(135deg,#2b6cb0,#123a5c)'
+        : s.thumb==='backend' ? 'linear-gradient(135deg,#0f2438,#334155)'
+        : 'linear-gradient(135deg,#f59e0b,#b45309)';
+      var lbl = document.createElement('div'); lbl.className='frame';
+      lbl.innerHTML = '<span style="color:rgba(255,255,255,.9);font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase">'+(s.thumb)+'</span>';
+      thumb.appendChild(lbl);
+    }
+  });
+
+  function swatch(id){ var t=T.getTheme(id); return '<span class="sw" style="background:'+t.swatches[0]+'"></span>'; }
+  function themeLabel(id){ return T.getTheme(id).label; }
+
+  function renderStory(){
+    var stationRow = D.stations.find(function(s){return s.id===previewStation;});
+    var res = T.resolve(stationRow.branchId, previewStation);
+    var flow = document.getElementById('flow');
+    var nodes = [
+      { lvl:'ROOT default', c: res.chain[0] },
+      { lvl:'Library / branch', c: res.chain[1] },
+      { lvl:'Station', c: res.chain[2] },
+    ];
+    var html = '';
+    nodes.forEach(function(n, i){
+      var c = n.c;
+      var valTxt = c.value ? (swatch(c.value)+themeLabel(c.value)) : '<span class="state inherit">— inherits —</span>';
+      html += '<div class="node'+(c.active?' active':'')+'">'+
+        '<span class="lvl">'+n.lvl+'</span>'+
+        '<span class="val">'+valTxt+'</span>'+
+        '<span class="state '+(c.active?'':'inherit')+'">'+(c.active?'✓ in effect here':(c.set?'set, but overridden below':'not set'))+'</span>'+
+      '</div>';
+      if (i<nodes.length-1) html += '<div class="arrow">→</div>';
+    });
+    flow.innerHTML = html;
+    document.getElementById('resolved').innerHTML =
+      'Effective on <b>'+stationRow.label+'</b> ('+stationRow.branchLabel+'): '+
+      swatch(res.id)+'<b>'+themeLabel(res.id)+'</b> · <span style="color:var(--muted)">'+res.sourceLabel+'</span>';
+  }
+
+  // station preview tabs
+  var tabs = document.getElementById('stationTabs');
+  D.stations.forEach(function(s){
+    var b = document.createElement('button'); b.type='button'; b.textContent = s.label.replace(' Kiosk','');
+    b.setAttribute('aria-pressed', String(s.id===previewStation));
+    b.addEventListener('click', function(){ previewStation=s.id;
+      [].forEach.call(tabs.children,function(x){x.setAttribute('aria-pressed', String(x===b));}); renderStory(); });
+    tabs.appendChild(b);
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    T.ensureSeed(D.seed, true); renderStory();
+    var b=this; var o=b.textContent; b.textContent='✓ Reset'; setTimeout(function(){b.textContent=o;},1200);
+  });
+
+  var steps = document.getElementById('steps');
+  D.walkthrough.forEach(function(w){ var li=document.createElement('li');
+    li.innerHTML='<b>'+w.s+'.</b> <span>'+w.d+'</span>'; steps.appendChild(li); });
+
+  document.getElementById('copyNotes').addEventListener('click', function(e){
+    e.preventDefault(); window.C9Notes.copy().then(function(){ var el=e.target; var o=el.textContent;
+      el.textContent='Copied ✓'; setTimeout(function(){el.textContent=o;},1400); });
+  });
+
+  window.addEventListener('storage', renderStory);
+  renderStory();
+})();
+</script>
+</body>
+</html>

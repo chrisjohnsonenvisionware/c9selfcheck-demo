@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Cloud9 SelfCheck — Settings (Workbench)</title>
+<style>
+  :root{--ink:#0f2438;--slate:#123a5c;--blue:#2b6cb0;--amber:#f59e0b;--bg:#f1f5f9;--card:#fff;--line:#e2e8f0;--muted:#64748b;
+    --radius:10px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.45}
+  a{color:var(--blue)}
+  .topnav{background:#0f2438;color:#dbe4ee;padding:10px 18px;display:flex;align-items:center;gap:12px}
+  .topnav .logo{width:26px;height:26px;border-radius:7px;background:conic-gradient(from 210deg,#0d9488,#2b6cb0,#0d9488)}
+  .topnav b{font-size:16px;color:#fff}
+  .topnav .tag{font-size:11px;font-weight:700;background:#2b6cb0;border-radius:999px;padding:3px 9px;color:#fff}
+  .topnav a{margin-left:auto;color:#8fd0ff;font-weight:600;font-size:14px}
+  .layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 46px)}
+  /* left tree */
+  .tree{background:#fff;border-right:1px solid var(--line);padding:14px 10px}
+  .tree .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px;font-weight:700}
+  .tree button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:8px 10px;
+    font:600 14px system-ui;color:var(--slate);cursor:pointer;min-height:38px}
+  .tree button:hover{background:#f1f7fc}
+  .tree button.sel{background:#e6f2fb;color:var(--slate)}
+  .tree button:focus-visible{outline:3px solid var(--amber);outline-offset:-2px}
+  .tree .depth1{padding-left:22px}.tree .depth2{padding-left:36px}.tree .depth3{padding-left:50px;font-weight:500}
+  /* main */
+  .main{padding:20px 24px 80px;max-width:860px}
+  .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px}
+  .tabs button{border:0;background:transparent;padding:12px 16px;font:700 15px system-ui;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tabs button[aria-selected=true]{color:var(--slate);border-bottom-color:var(--blue)}
+  .scopeline{font-size:14px;color:var(--muted);margin-bottom:14px}
+  .scopeline b{color:var(--slate)}
+  .find{position:relative;margin-bottom:18px}
+  .find input{width:100%;min-height:46px;border:1px solid var(--line);border-radius:10px;padding:0 16px 0 42px;font-size:16px;background:#fff}
+  .find input:focus-visible{outline:3px solid var(--amber);outline-offset:1px;border-color:var(--blue)}
+  .find .mag{position:absolute;left:14px;top:12px;color:var(--muted);font-size:18px}
+  .section{background:#fff;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+  .sec-hd{display:flex;align-items:center;gap:10px;width:100%;border:0;background:#fff;padding:14px 16px;cursor:pointer;text-align:left;font:700 16px system-ui;color:var(--slate);min-height:52px}
+  .sec-hd:hover{background:#f8fafc}
+  .sec-hd:focus-visible{outline:3px solid var(--amber);outline-offset:-2px}
+  .sec-hd .chev{transition:transform .15s;color:var(--muted)}
+  .sec-hd[aria-expanded=true] .chev{transform:rotate(90deg)}
+  .sec-hd .newtag{font-size:10px;font-weight:800;background:#dcfce7;color:#15803d;border-radius:999px;padding:3px 8px;letter-spacing:.04em}
+  .sec-bd{padding:4px 16px 12px;display:none}
+  .sec-bd.open{display:block}
+  .sec-blurb{color:var(--muted);font-size:13px;margin:2px 0 12px}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .rk{flex:1;min-width:0}
+  .row .rk .k{font-weight:600;font-size:15px;color:var(--ink)}
+  .row .rk .h{font-size:13px;color:var(--muted)}
+  .row .rv{font-size:15px;color:var(--slate);font-weight:600;max-width:44%;text-align:right;word-break:break-word}
+  /* scope chevron */
+  .scopechip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;
+    border-radius:999px;min-height:34px;padding:0 12px;font:600 12px system-ui;cursor:pointer;color:var(--muted)}
+  .scopechip.over{border-color:#fcd34d;background:#fffbeb;color:#92400e}
+  .scopechip:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .scopechip .ci{font-size:13px}
+  /* theme value control */
+  .themeval{display:flex;align-items:center;gap:10px}
+  .themeval .sw{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.15)}
+  .themeval button{min-height:38px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 12px;font:600 13px system-ui;color:var(--slate);cursor:pointer}
+  .themeval button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  /* picker popover (reused) */
+  .pick{display:none;margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:10px;background:#f8fbfe}
+  .pick.open{display:block}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+  .pcard{border:2px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;background:#fff;padding:0;text-align:left}
+  .pcard.sel{border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,108,176,.18)}
+  .pcard:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .pcard .mini{height:70px;background:#0a1f2e}.pcard .mini canvas{width:100%;height:100%;display:block}
+  .pcard .nm{padding:6px 8px;font:700 13px system-ui;color:var(--slate)}
+  /* stations tab */
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);font-size:14px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:#f8fafc}
+  td .stn{font-weight:700;color:var(--slate)}
+  .newcol{background:#f0fdf4}
+  select.mini{min-height:36px;border:1px solid var(--line);border-radius:8px;padding:0 8px;font:600 13px system-ui;color:var(--slate)}
+  .menu{position:fixed;z-index:50;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;display:none;min-width:200px}
+  .menu.open{display:block}
+  .menu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:7px;padding:9px 10px;font:600 13px system-ui;color:var(--slate);cursor:pointer;min-height:38px}
+  .menu button:hover{background:#f1f7fc}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--slate);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+  @media (max-width:760px){.layout{grid-template-columns:1fr}.tree{border-right:0;border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body data-surface="Backend console">
+  <div class="topnav"><span class="logo"></span><b>Cloud9 SelfCheck</b><span class="tag">Web Console</span>
+    <a href="../index.html">← Workbench home</a></div>
+  <div class="layout">
+    <nav class="tree" id="tree" aria-label="Scope"></nav>
+    <main class="main">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="settings">Settings</button>
+        <button role="tab" aria-selected="false" data-tab="stations">Stations</button>
+      </div>
+      <div id="tabSettings">
+        <p class="scopeline" id="scopeLine"></p>
+        <div class="find"><span class="mag">🔎</span><input id="find" placeholder="Find a setting…" aria-label="Find a setting"></div>
+        <div id="sections"></div>
+      </div>
+      <div id="tabStations" style="display:none">
+        <p class="scopeline">Stations at <b>Pioneer Library System</b>. Group membership, install tokens, and naming — plus the new per-station attract-theme override.</p>
+        <table><thead><tr><th>Station</th><th>Branch</th><th>Group</th><th>Install token</th><th class="newcol">Attract theme <span style="color:#15803d">• new</span></th></tr></thead>
+          <tbody id="stationRows"></tbody></table>
+      </div>
+    </main>
+  </div>
+  <div class="menu" id="scopeMenu" role="menu"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../workbench-data/c9selfcheck-data.js"></script>
+<script src="../workbench-data/theme-engine.js"></script>
+<script src="../workbench-data/notes-sync.js"></script>
+<script>
+(function(){
+  var D=window.C9DATA, T=window.C9Theme;
+  T.ensureSeed(D.seed);
+  // scope nodes for the tree; theme overrides key: root -> root, branch -> library(branchId), station -> station(id)
+  var nodes=[{kind:'root',id:'root',label:'ROOT',depth:0}];
+  nodes.push({kind:'library',id:'pioneer',label:'Pioneer Library System',depth:1});
+  D.tree.children[0].children.forEach(function(br){ nodes.push({kind:'branch',id:br.id,label:br.label,depth:2});
+    br.children.forEach(function(st){ nodes.push({kind:'station',id:st.id,branchId:st.branchId||br.id,label:st.label,depth:3}); }); });
+  var scope=nodes[0];
+  var open={attract:true};
+  var pickerOpenFor=null;
+
+  function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},1500);}
+  function swatch(id){return '<span class="sw" style="background:'+T.getTheme(id).swatches[0]+'"></span>';}
+
+  // tree
+  var tree=document.getElementById('tree');
+  tree.innerHTML='<div class="lbl">Scope tree</div>';
+  nodes.forEach(function(n){ var b=document.createElement('button'); b.className='depth'+n.depth+(n===scope?' sel':'');
+    b.textContent=(n.kind==='root'?'▸ ':'')+n.label; b.setAttribute('data-node',n.id);
+    b.addEventListener('click',function(){ scope=n; renderTree(); render(); }); tree.appendChild(b); });
+  function renderTree(){ [].forEach.call(tree.querySelectorAll('[data-node]'),function(b){ b.classList.toggle('sel', b.getAttribute('data-node')===scope.id); }); }
+
+  // theme override helpers keyed to scope
+  function themeOwnValue(){ if(scope.kind==='root')return T.getRoot()&&localStorage.getItem('c9sc.theme.root')?T.getRoot():null;
+    if(scope.kind==='branch')return T.getLibrary(scope.id);
+    if(scope.kind==='station')return T.getStation(scope.id);
+    return null; }
+  function themeEffective(){
+    var root=T.getRoot();
+    if(scope.kind==='root'||scope.kind==='library'){ return {id:root, inherited: !localStorage.getItem('c9sc.theme.root')}; }
+    if(scope.kind==='branch'){ var b=T.getLibrary(scope.id); return b?{id:b,inherited:false}:{id:root,inherited:true}; }
+    var s=T.getStation(scope.id); if(s) return {id:s,inherited:false};
+    var br=T.getLibrary(scope.branchId); if(br) return {id:br,inherited:false};
+    return {id:root,inherited:true};
+  }
+  function setTheme(id){ if(scope.kind==='root'||scope.kind==='library') T.setRoot(id||T.DEFAULT_THEME_ID);
+    else if(scope.kind==='branch') T.setLibrary(scope.id,id); else if(scope.kind==='station') T.setStation(scope.id,id); }
+
+  // tabs
+  [].forEach.call(document.querySelectorAll('[data-tab]'),function(b){ b.addEventListener('click',function(){
+    var t=b.getAttribute('data-tab');
+    [].forEach.call(document.querySelectorAll('[data-tab]'),function(x){x.setAttribute('aria-selected',String(x===b));});
+    document.getElementById('tabSettings').style.display = t==='settings'?'':'none';
+    document.getElementById('tabStations').style.display = t==='stations'?'':'none';
+    if(t==='stations') renderStations();
+  });});
+
+  function render(){
+    document.getElementById('scopeLine').innerHTML='Editing <b>'+scope.label+'</b> · settings shown are effective at this scope. The chevron on each row shows whether the value is inherited or overridden here.';
+    renderSections(document.getElementById('find').value.toLowerCase().trim());
+  }
+
+  function renderSections(filter){
+    var host=document.getElementById('sections'); host.innerHTML='';
+    D.settings.sections.forEach(function(sec){
+      var rows=sec.rows.filter(function(r){ return !filter || (sec.title+' '+r.label).toLowerCase().indexOf(filter)>=0; });
+      if(!rows.length) return;
+      var isOpen = open[sec.id] || !!filter;
+      var secEl=document.createElement('div'); secEl.className='section';
+      secEl.innerHTML='<button class="sec-hd" aria-expanded="'+isOpen+'"><span class="chev">▸</span>'+sec.title+
+        (sec.isNew?' <span class="newtag">NEW</span>':'')+'</button>'+
+        '<div class="sec-bd'+(isOpen?' open':'')+'">'+(sec.blurb?'<p class="sec-blurb">'+sec.blurb+'</p>':'')+'</div>';
+      var bd=secEl.querySelector('.sec-bd');
+      rows.forEach(function(r){ bd.appendChild(renderRow(sec,r)); });
+      host.appendChild(secEl);
+      secEl.querySelector('.sec-hd').addEventListener('click',function(){ open[sec.id]=!(open[sec.id]); render(); });
+    });
+  }
+
+  function renderRow(sec, r){
+    var row=document.createElement('div'); row.className='row';
+    if(r.type==='theme'){
+      var eff=themeEffective(), own=themeOwnValue();
+      var overridden = scope.kind==='root' ? !!localStorage.getItem('c9sc.theme.root') : !!own;
+      var valHtml='<div class="themeval">'+swatch(eff.id)+'<span style="font-weight:700">'+T.getTheme(eff.id).label+'</span>'+
+        '<button data-openpick>Change…</button></div>';
+      row.innerHTML='<button class="scopechip '+(overridden?'over':'')+'" data-scope aria-label="Scope"><span class="ci">'+(overridden?'●':'⌄')+'</span>'+(overridden?(scope.kind==='root'?'Set at ROOT':'Overridden here'):'Inherited')+'</button>'+
+        '<div class="rk"><div class="k">'+r.label+'</div><div class="h">'+(r.help||'')+'</div></div>'+
+        '<div class="rv">'+valHtml+'</div>';
+      // picker
+      var pick=document.createElement('div'); pick.className='pick'+(pickerOpenFor===r.key?' open':''); pick.innerHTML='<div class="pgrid"></div>';
+      row.appendChild(pick);
+      if(pickerOpenFor===r.key){ var grid=pick.querySelector('.pgrid');
+        T.THEMES.forEach(function(t){ var c=document.createElement('button'); c.className='pcard'+(t.id===eff.id?' sel':''); c.type='button';
+          c.setAttribute('aria-label','Use '+t.label); c.innerHTML='<div class="mini"><canvas></canvas></div><div class="nm">'+t.label+'</div>';
+          grid.appendChild(c); T.drawThumbnail(c.querySelector('canvas'),t.id,true);
+          c.addEventListener('click',function(){ setTheme(t.id); pickerOpenFor=null; toast(t.label+' set at '+scope.label); render(); }); });
+      }
+      row.querySelector('[data-openpick]').addEventListener('click',function(){ pickerOpenFor = pickerOpenFor===r.key?null:r.key; render(); });
+      row.querySelector('[data-scope]').addEventListener('click',function(e){ openScopeMenu(e.currentTarget, r); });
+    } else {
+      row.innerHTML='<button class="scopechip" data-scope aria-label="Scope"><span class="ci">⌄</span>Inherited</button>'+
+        '<div class="rk"><div class="k">'+r.label+'</div></div>'+
+        '<div class="rv">'+(r.value||'')+'</div>';
+      row.querySelector('[data-scope]').addEventListener('click',function(e){ openScopeMenu(e.currentTarget, r, true); });
+    }
+    return row;
+  }
+
+  var scopeMenu=document.getElementById('scopeMenu');
+  function openScopeMenu(anchor, r, displayOnly){
+    var rect=anchor.getBoundingClientRect();
+    scopeMenu.style.left=rect.left+'px'; scopeMenu.style.top=(rect.bottom+6)+'px';
+    if(displayOnly){ scopeMenu.innerHTML='<button disabled style="color:#94a3b8">This setting is display-only in the demo</button>'; }
+    else {
+      var overridden = scope.kind==='root' ? !!localStorage.getItem('c9sc.theme.root') : !!themeOwnValue();
+      scopeMenu.innerHTML='<button data-act="override">Override at '+scope.label+'…</button>'+
+        (overridden && scope.kind!=='root' ? '<button data-act="revert">Revert to inherited</button>':'')+
+        (scope.kind==='root'?'':'');
+      scopeMenu.querySelector('[data-act="override"]').addEventListener('click',function(){ scopeMenu.classList.remove('open'); pickerOpenFor=r.key; render(); });
+      var rev=scopeMenu.querySelector('[data-act="revert"]'); if(rev) rev.addEventListener('click',function(){ scopeMenu.classList.remove('open'); setTheme(null); toast('Reverted to inherited'); render(); });
+    }
+    scopeMenu.classList.add('open');
+  }
+  document.addEventListener('click',function(e){ if(!scopeMenu.contains(e.target) && !e.target.closest('[data-scope]')) scopeMenu.classList.remove('open'); });
+
+  function renderStations(){
+    var tbody=document.getElementById('stationRows'); tbody.innerHTML='';
+    D.stations.forEach(function(s){
+      var own=T.getStation(s.id); var r=T.resolve(s.branchId,s.id);
+      var opts='<option value="">Inherit ('+T.getTheme(r.source==='station'?(T.getLibrary(s.branchId)||T.getRoot()):r.id).label+')</option>'+
+        T.THEMES.map(function(t){return '<option value="'+t.id+'"'+(own===t.id?' selected':'')+'>'+t.label+'</option>';}).join('');
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td><span class="stn">'+s.label+'</span></td><td>'+s.branchLabel+'</td><td>'+s.group+'</td><td><code>'+s.token+'</code></td>'+
+        '<td class="newcol"><select class="mini" data-st="'+s.id+'" aria-label="Attract theme for '+s.label+'">'+opts+'</select></td>';
+      tbody.appendChild(tr);
+    });
+    [].forEach.call(tbody.querySelectorAll('[data-st]'),function(sel){ sel.addEventListener('change',function(){
+      T.setStation(sel.getAttribute('data-st'), sel.value||null); toast('Station override updated'); renderStations(); }); });
+  }
+
+  document.getElementById('find').addEventListener('input',render);
+  window.addEventListener('storage',function(){ render(); if(document.getElementById('tabStations').style.display!=='none') renderStations(); });
+  render();
+})();
+</script>
+</body>
+</html>
