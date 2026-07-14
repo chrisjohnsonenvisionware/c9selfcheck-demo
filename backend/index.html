@@ -4,113 +4,205 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Cloud9 SelfCheck — Settings (Workbench)</title>
+<title>Cloud9 Web Console — SelfCheck Settings (Workbench)</title>
 <style>
-  :root{--ink:#0f2438;--slate:#123a5c;--blue:#2b6cb0;--amber:#f59e0b;--bg:#f1f5f9;--card:#fff;--line:#e2e8f0;--muted:#64748b;
-    --radius:10px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  :root{--ink:#1f2937;--slate:#0f2f57;--blue:#2b6cb0;--teal:#0d9488;--amber:#f59e0b;
+    --bg:#eef2f6;--card:#fff;--line:#e2e8f0;--muted:#64748b;--rail:#eef2f7;--railactive:#12b3a6;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.45}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.4}
   a{color:var(--blue)}
-  .topnav{background:#0f2438;color:#dbe4ee;padding:10px 18px;display:flex;align-items:center;gap:12px}
-  .topnav .logo{width:26px;height:26px;border-radius:7px;background:conic-gradient(from 210deg,#0d9488,#2b6cb0,#0d9488)}
-  .topnav b{font-size:16px;color:#fff}
-  .topnav .tag{font-size:11px;font-weight:700;background:#2b6cb0;border-radius:999px;padding:3px 9px;color:#fff}
-  .topnav a{margin-left:auto;color:#8fd0ff;font-weight:600;font-size:14px}
-  .layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 46px)}
-  /* left tree */
-  .tree{background:#fff;border-right:1px solid var(--line);padding:14px 10px}
-  .tree .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 8px;font-weight:700}
-  .tree button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:8px 10px;
-    font:600 14px system-ui;color:var(--slate);cursor:pointer;min-height:38px}
-  .tree button:hover{background:#f1f7fc}
-  .tree button.sel{background:#e6f2fb;color:var(--slate)}
-  .tree button:focus-visible{outline:3px solid var(--amber);outline-offset:-2px}
-  .tree .depth1{padding-left:22px}.tree .depth2{padding-left:36px}.tree .depth3{padding-left:50px;font-weight:500}
+  /* ---- top bar (mirrors the real Web Console) ---- */
+  .appbar{height:60px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 18px;position:sticky;top:0;z-index:40}
+  .brandlogo{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--slate);font-size:18px}
+  .brandlogo .book{width:34px;height:26px;border-radius:5px;background:
+    linear-gradient(90deg,#ef4444 0 16%,#f59e0b 16% 33%,#eab308 33% 50%,#22c55e 50% 66%,#3b82f6 66% 83%,#8b5cf6 83% 100%);
+    -webkit-mask:radial-gradient(circle at 50% 120%, transparent 38%, #000 39%);mask:radial-gradient(circle at 50% 120%, transparent 38%, #000 39%)}
+  .appbar .prod{font-size:12px;font-weight:700;color:#fff;background:var(--slate);border-radius:999px;padding:3px 10px}
+  .appbar .spacer{flex:1}
+  .appbar .icobtn{width:40px;height:40px;border-radius:10px;border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .appbar .icobtn:hover{background:#f1f5f9}
+  .appbar .icobtn:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  /* persona menu */
+  .persona{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;background:#fff;cursor:pointer}
+  .persona:hover{background:#f8fafc}
+  .persona:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .persona .av{width:34px;height:34px;border-radius:50%;background:var(--slate);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .persona .who{text-align:left;line-height:1.15}
+  .persona .who .n{display:block;font-weight:700;font-size:14px}
+  .persona .who .r{display:block;font-size:12px;color:var(--muted)}
+  .pmenu{position:absolute;right:18px;top:58px;z-index:60;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.18);width:340px;display:none;overflow:hidden}
+  .pmenu.open{display:block}
+  .pmenu .ph{padding:10px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:#f8fafc;border-bottom:1px solid var(--line)}
+  .pmenu button{display:flex;gap:12px;width:100%;text-align:left;border:0;background:#fff;padding:12px 14px;cursor:pointer;align-items:flex-start;border-bottom:1px solid var(--line)}
+  .pmenu button:hover{background:#f1f7fc}
+  .pmenu button[aria-current=true]{background:#e6f2fb}
+  .pmenu .av{flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--slate);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .pmenu .n{font-weight:700;font-size:14px}
+  .pmenu .r{font-size:12.5px;color:var(--blue);font-weight:600}
+  .pmenu .note{font-size:12px;color:var(--muted);margin-top:3px}
+
+  /* ---- layout: nav rail | scope tree | main ---- */
+  .layout{display:grid;grid-template-columns:210px 250px 1fr;min-height:calc(100vh - 60px)}
+  .rail{background:var(--rail);border-right:1px solid var(--line);padding:14px 10px;overflow:auto}
+  .railgrp{margin-bottom:16px}
+  .railgrp .gh{display:flex;align-items:center;gap:6px;font-weight:800;color:var(--slate);font-size:13px;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px}
+  .rail button.item{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:8px 10px 8px 20px;font:600 13.5px system-ui;color:#334155;cursor:pointer;min-height:36px}
+  .rail button.item:hover{background:#e2ebf3}
+  .rail button.item.active{background:var(--railactive);color:#fff}
+  .rail button.item:focus-visible{outline:3px solid var(--amber);outline-offset:-2px}
+  .rail .sub{padding-left:34px}
+
+  /* scope tree */
+  .tree{background:#fff;border-right:1px solid var(--line);padding:12px 8px;overflow:auto}
+  .tree .find{position:relative;margin-bottom:10px}
+  .tree .find input{width:100%;min-height:40px;border:1px solid var(--line);border-radius:8px;padding:0 34px 0 32px;font-size:14px}
+  .tree .find input:focus-visible{outline:3px solid var(--amber);outline-offset:1px}
+  .tree .find .mag{position:absolute;left:9px;top:10px;color:var(--muted)}
+  .tree .find .clr{position:absolute;right:6px;top:6px;width:28px;height:28px;border:0;background:var(--slate);color:#fff;border-radius:6px;cursor:pointer}
+  .tnode{display:flex;align-items:center;gap:4px;border-radius:8px;min-height:34px}
+  .tnode .tw{width:22px;height:30px;border:0;background:transparent;cursor:pointer;color:var(--muted);font-size:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .tnode .lbl{flex:1;text-align:left;border:0;background:transparent;cursor:pointer;font:600 13.5px system-ui;color:var(--slate);padding:6px 6px;min-height:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:6px}
+  .tnode .lbl:hover{background:#f1f7fc}
+  .tnode .lbl:focus-visible{outline:3px solid var(--amber);outline-offset:-2px}
+  .tnode.sel .lbl{background:#12b3a6;color:#fff}
+  .tnode .kindtag{font-size:10px;color:var(--muted);margin-left:4px}
+
   /* main */
-  .main{padding:20px 24px 80px;max-width:860px}
-  .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:18px}
-  .tabs button{border:0;background:transparent;padding:12px 16px;font:700 15px system-ui;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
-  .tabs button[aria-selected=true]{color:var(--slate);border-bottom-color:var(--blue)}
-  .scopeline{font-size:14px;color:var(--muted);margin-bottom:14px}
-  .scopeline b{color:var(--slate)}
-  .find{position:relative;margin-bottom:18px}
-  .find input{width:100%;min-height:46px;border:1px solid var(--line);border-radius:10px;padding:0 16px 0 42px;font-size:16px;background:#fff}
-  .find input:focus-visible{outline:3px solid var(--amber);outline-offset:1px;border-color:var(--blue)}
-  .find .mag{position:absolute;left:14px;top:12px;color:var(--muted);font-size:18px}
-  .section{background:#fff;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
-  .sec-hd{display:flex;align-items:center;gap:10px;width:100%;border:0;background:#fff;padding:14px 16px;cursor:pointer;text-align:left;font:700 16px system-ui;color:var(--slate);min-height:52px}
+  .main{padding:18px 22px 90px;max-width:920px;overflow:auto}
+  .tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:14px}
+  .tabs button{border:0;background:transparent;padding:11px 16px;font:700 15px system-ui;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tabs button[aria-selected=true]{color:var(--slate);border-bottom-color:var(--teal)}
+  .mainhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .mainhead h1{font-size:22px;margin:0;color:var(--slate)}
+  .findbtn{min-height:40px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 14px;font:600 13px system-ui;color:var(--slate);cursor:pointer}
+  .findbtn:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .scopectx{font-size:13px;color:var(--muted);margin:0 0 14px}
+  .scopectx b{color:var(--slate)}
+  .collapse-all{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;font:700 14px system-ui;color:var(--slate);cursor:pointer;padding:6px 0;margin-bottom:8px}
+  .findfield{position:relative;margin-bottom:14px;display:none}
+  .findfield.open{display:block}
+  .findfield input{width:100%;min-height:44px;border:1px solid var(--line);border-radius:9px;padding:0 14px 0 40px;font-size:15px}
+  .findfield .mag{position:absolute;left:12px;top:11px;color:var(--muted)}
+
+  .section{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+  .sec-hd{display:flex;align-items:center;gap:8px;width:100%;border:0;background:#fff;padding:14px 16px;cursor:pointer;text-align:left;font:800 15px system-ui;color:var(--slate);min-height:50px}
   .sec-hd:hover{background:#f8fafc}
   .sec-hd:focus-visible{outline:3px solid var(--amber);outline-offset:-2px}
-  .sec-hd .chev{transition:transform .15s;color:var(--muted)}
+  .sec-hd .chev{color:var(--muted);transition:transform .15s;font-size:12px}
   .sec-hd[aria-expanded=true] .chev{transform:rotate(90deg)}
   .sec-hd .newtag{font-size:10px;font-weight:800;background:#dcfce7;color:#15803d;border-radius:999px;padding:3px 8px;letter-spacing:.04em}
-  .sec-bd{padding:4px 16px 12px;display:none}
+  .sec-bd{padding:6px 16px 14px;display:none}
   .sec-bd.open{display:block}
   .sec-blurb{color:var(--muted);font-size:13px;margin:2px 0 12px}
-  .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .grouptitle{display:inline-block;font-weight:700;font-size:13.5px;color:var(--slate);background:#eef2f7;border:1px solid var(--line);border-radius:8px 8px 0 0;padding:7px 14px;margin:14px 0 0}
+  .groupbox{border:1px solid var(--line);border-radius:0 8px 8px 8px;padding:6px 14px;margin-bottom:6px}
+
+  .row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid #f1f5f9}
   .row:last-child{border-bottom:0}
-  .row .rk{flex:1;min-width:0}
-  .row .rk .k{font-weight:600;font-size:15px;color:var(--ink)}
-  .row .rk .h{font-size:13px;color:var(--muted)}
-  .row .rv{font-size:15px;color:var(--slate);font-weight:600;max-width:44%;text-align:right;word-break:break-word}
-  /* scope chevron */
-  .scopechip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;
-    border-radius:999px;min-height:34px;padding:0 12px;font:600 12px system-ui;cursor:pointer;color:var(--muted)}
-  .scopechip.over{border-color:#fcd34d;background:#fffbeb;color:#92400e}
-  .scopechip:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
-  .scopechip .ci{font-size:13px}
-  /* theme value control */
+  /* scope chevron (the blue dropdown on the LEFT of each setting) */
+  .scopechev{flex:0 0 auto;width:34px;height:34px;border:1px solid #bcd3ea;background:#eaf2fb;color:var(--blue);border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .scopechev.over{background:#fffbeb;border-color:#fcd34d;color:#92400e}
+  .scopechev:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .rk{flex:1;min-width:0}
+  .rk .k{font-weight:600;font-size:14.5px;color:var(--ink)}
+  .rk .lang{font-size:12px;color:var(--muted);margin-top:4px}
+  .rk .help{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .rk .tip{font-size:11.5px;color:#94a3b8;margin-top:3px;font-style:italic}
+  .rc{flex:0 0 auto;display:flex;align-items:center;gap:10px;max-width:46%;justify-content:flex-end}
+  .rc textarea{width:100%;min-height:64px;border:1px solid var(--line);border-radius:8px;padding:8px;font:14px system-ui;resize:vertical}
+  .rowfull .rc{max-width:100%;flex:1}
+  .rowfull{flex-wrap:wrap}
+  .rc input[type=text],.rc input[type=number]{min-height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:14px system-ui;color:var(--slate);width:100%}
+  .cbx{width:26px;height:26px;border-radius:6px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff;color:#fff}
+  .cbx[aria-checked=true]{background:var(--teal);border-color:var(--teal)}
+  .cbx:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
   .themeval{display:flex;align-items:center;gap:10px}
   .themeval .sw{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.15)}
-  .themeval button{min-height:38px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 12px;font:600 13px system-ui;color:var(--slate);cursor:pointer}
-  .themeval button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
-  /* picker popover (reused) */
-  .pick{display:none;margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:10px;background:#f8fbfe}
+  .themeval .chg{min-height:36px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 12px;font:600 13px system-ui;color:var(--slate);cursor:pointer}
+  .themeval .chg:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .pick{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:10px;background:#f8fbfe;display:none}
   .pick.open{display:block}
-  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
   .pcard{border:2px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;background:#fff;padding:0;text-align:left}
   .pcard.sel{border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,108,176,.18)}
   .pcard:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
-  .pcard .mini{height:70px;background:#0a1f2e}.pcard .mini canvas{width:100%;height:100%;display:block}
-  .pcard .nm{padding:6px 8px;font:700 13px system-ui;color:var(--slate)}
+  .pcard .mini{height:66px;background:#0a1f2e}.pcard .mini canvas{width:100%;height:100%;display:block}
+  .pcard .nm{padding:6px 8px;font:700 12.5px system-ui;color:var(--slate)}
+  .inheritnote{font-size:12.5px;color:#94a3b8;font-style:italic}
+  .submitbar{margin-top:16px}
+  .submit{min-height:44px;border:0;border-radius:8px;background:var(--slate);color:#fff;font:700 14px system-ui;padding:0 22px;cursor:pointer}
+  .submit:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
   /* stations tab */
-  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
   th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);font-size:14px}
   th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:#f8fafc}
   td .stn{font-weight:700;color:var(--slate)}
   .newcol{background:#f0fdf4}
   select.mini{min-height:36px;border:1px solid var(--line);border-radius:8px;padding:0 8px;font:600 13px system-ui;color:var(--slate)}
-  .menu{position:fixed;z-index:50;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;display:none;min-width:200px}
+
+  .menu{position:fixed;z-index:70;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;display:none;min-width:230px}
   .menu.open{display:block}
+  .menu .mh{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 10px}
   .menu button{display:block;width:100%;text-align:left;border:0;background:transparent;border-radius:7px;padding:9px 10px;font:600 13px system-ui;color:var(--slate);cursor:pointer;min-height:38px}
   .menu button:hover{background:#f1f7fc}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--slate);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .2s;pointer-events:none}
+  .menu button[disabled]{color:#94a3b8;cursor:default}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--slate);color:#fff;padding:12px 20px;border-radius:999px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .2s;pointer-events:none;z-index:80}
   .toast.show{opacity:1}
-  @media (max-width:760px){.layout{grid-template-columns:1fr}.tree{border-right:0;border-bottom:1px solid var(--line)}}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr} .rail,.tree{border-right:0;border-bottom:1px solid var(--line)} .rc{max-width:60%} }
 </style>
 </head>
 <body data-surface="Backend console">
-  <div class="topnav"><span class="logo"></span><b>Cloud9 SelfCheck</b><span class="tag">Web Console</span>
-    <a href="../index.html">← Workbench home</a></div>
+  <div class="appbar">
+    <span class="brandlogo"><span class="book"></span>Cloud9 <span class="prod">Web Console</span></span>
+    <span class="spacer"></span>
+    <button class="icobtn" title="Search" aria-label="Search">🔍</button>
+    <button class="icobtn" title="Help" aria-label="Help">❓</button>
+    <button class="icobtn" title="Notifications" aria-label="Notifications">🔔</button>
+    <button class="persona" id="personaBtn" aria-haspopup="menu" aria-expanded="false">
+      <span class="av" id="pAv">DR</span>
+      <span class="who"><span class="n" id="pName">Dana Ruiz</span><span class="r" id="pRole">EnvisionWare Technician</span></span>
+      <span style="color:#94a3b8">▾</span>
+    </button>
+    <a href="../index.html" style="font-weight:600;font-size:13px;margin-left:6px">← Workbench</a>
+  </div>
+  <div class="pmenu" id="pMenu" role="menu"></div>
+
   <div class="layout">
-    <nav class="tree" id="tree" aria-label="Scope"></nav>
+    <nav class="rail" id="rail" aria-label="Console navigation"></nav>
+    <nav class="tree" aria-label="Scope tree">
+      <div class="find">
+        <span class="mag">🔍</span>
+        <input id="treeFind" placeholder="Search" aria-label="Search scope tree">
+        <button class="clr" id="treeClr" aria-label="Clear search">✕</button>
+      </div>
+      <div id="treeBody"></div>
+    </nav>
     <main class="main">
       <div class="tabs" role="tablist">
         <button role="tab" aria-selected="true" data-tab="settings">Settings</button>
         <button role="tab" aria-selected="false" data-tab="stations">Stations</button>
       </div>
       <div id="tabSettings">
-        <p class="scopeline" id="scopeLine"></p>
-        <div class="find"><span class="mag">🔎</span><input id="find" placeholder="Find a setting…" aria-label="Find a setting"></div>
+        <div class="mainhead">
+          <h1 id="scopeTitle">SelfCheck Settings</h1>
+          <button class="findbtn" id="findToggle">Find a Setting</button>
+        </div>
+        <p class="scopectx" id="scopeCtx"></p>
+        <div class="findfield" id="findField"><span class="mag">🔍</span><input id="findInput" placeholder="Find a setting…" aria-label="Find a setting"></div>
+        <button class="collapse-all" id="collapseAll"><span>▾</span> Collapse All Sections</button>
         <div id="sections"></div>
+        <div class="submitbar"><button class="submit" id="submitBtn">Submit</button></div>
       </div>
       <div id="tabStations" style="display:none">
-        <p class="scopeline">Stations at <b>Pioneer Library System</b>. Group membership, install tokens, and naming — plus the new per-station attract-theme override.</p>
+        <p class="scopectx" id="stationsCtx"></p>
         <table><thead><tr><th>Station</th><th>Branch</th><th>Group</th><th>Install token</th><th class="newcol">Attract theme <span style="color:#15803d">• new</span></th></tr></thead>
           <tbody id="stationRows"></tbody></table>
       </div>
     </main>
   </div>
+
   <div class="menu" id="scopeMenu" role="menu"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -121,125 +213,286 @@
 (function(){
   var D=window.C9DATA, T=window.C9Theme;
   T.ensureSeed(D.seed);
-  // scope nodes for the tree; theme overrides key: root -> root, branch -> library(branchId), station -> station(id)
-  var nodes=[{kind:'root',id:'root',label:'ROOT',depth:0}];
-  nodes.push({kind:'library',id:'pioneer',label:'Pioneer Library System',depth:1});
-  D.tree.children[0].children.forEach(function(br){ nodes.push({kind:'branch',id:br.id,label:br.label,depth:2});
-    br.children.forEach(function(st){ nodes.push({kind:'station',id:st.id,branchId:st.branchId||br.id,label:st.label,depth:3}); }); });
-  var scope=nodes[0];
-  var open={attract:true};
-  var pickerOpenFor=null;
+
+  var RAIL = [
+    { group:'Setup', items:[
+      {label:'Platform'},{label:'Stations',tab:'stations'},{label:'Reservations'},{label:'Lockers'},
+      {label:'SelfCheck',sub:false,head:true},{label:'Settings',sub:true,active:true,tab:'settings'},
+      {label:'Account Mgmt'},{label:'Print'} ] },
+    { group:'Staff', items:[ {label:'Guests'},{label:'Reservations'},{label:'Lockers'},{label:'Analytics'} ] },
+    { group:'IC Tools', ic:true, items:[ {label:'Import PCR'},{label:'Export PCR'} ] },
+  ];
+
+  var _asParam = new URLSearchParams(location.search).get('as');
+  var _pid = (_asParam==='manager'||_asParam==='tech') ? _asParam : 'tech';
+  var _p0 = D.personas.find(function(p){return p.id===_pid;}) || D.personas[0];
+  var state = {
+    personaId: _pid,
+    scopeId: _p0.landingScope,
+    expanded: new Set(['root','grp-libraries','pioneer','br-main','br-river','grp-consortia']),
+    collapsedSections: new Set(),
+    tab: 'settings',
+    filter: '',
+    findOpen: false,
+    pickerOpenFor: null,
+  };
+
+  function persona(){ return D.personas.find(function(p){return p.id===state.personaId;}); }
+  function findNode(id, node){ node=node||D.consoleTree; if(node.id===id) return node;
+    if(node.children) for(var i=0;i<node.children.length;i++){ var f=findNode(id,node.children[i]); if(f) return f; } return null; }
+  function scopeNode(){ return findNode(state.scopeId) || D.consoleTree; }
+  // Root of the tree the current persona can see.
+  function personaRoot(){ return persona().landingScope==='root' ? D.consoleTree : findNode(persona().landingScope); }
 
   function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},1500);}
-  function swatch(id){return '<span class="sw" style="background:'+T.getTheme(id).swatches[0]+'"></span>';}
+  function swatch(id){ return '<span class="sw" style="background:'+T.getTheme(id).swatches[0]+'"></span>'; }
 
-  // tree
-  var tree=document.getElementById('tree');
-  tree.innerHTML='<div class="lbl">Scope tree</div>';
-  nodes.forEach(function(n){ var b=document.createElement('button'); b.className='depth'+n.depth+(n===scope?' sel':'');
-    b.textContent=(n.kind==='root'?'▸ ':'')+n.label; b.setAttribute('data-node',n.id);
-    b.addEventListener('click',function(){ scope=n; renderTree(); render(); }); tree.appendChild(b); });
-  function renderTree(){ [].forEach.call(tree.querySelectorAll('[data-node]'),function(b){ b.classList.toggle('sel', b.getAttribute('data-node')===scope.id); }); }
-
-  // theme override helpers keyed to scope
-  function themeOwnValue(){ if(scope.kind==='root')return T.getRoot()&&localStorage.getItem('c9sc.theme.root')?T.getRoot():null;
-    if(scope.kind==='branch')return T.getLibrary(scope.id);
-    if(scope.kind==='station')return T.getStation(scope.id);
-    return null; }
-  function themeEffective(){
-    var root=T.getRoot();
-    if(scope.kind==='root'||scope.kind==='library'){ return {id:root, inherited: !localStorage.getItem('c9sc.theme.root')}; }
-    if(scope.kind==='branch'){ var b=T.getLibrary(scope.id); return b?{id:b,inherited:false}:{id:root,inherited:true}; }
-    var s=T.getStation(scope.id); if(s) return {id:s,inherited:false};
-    var br=T.getLibrary(scope.branchId); if(br) return {id:br,inherited:false};
-    return {id:root,inherited:true};
+  /* ---------- persona switching ---------- */
+  function applyPersona(){
+    var p=persona();
+    document.getElementById('pAv').textContent=p.initials;
+    document.getElementById('pName').textContent=p.name;
+    document.getElementById('pRole').textContent=p.role+(p.org?(' · '+p.org):'');
+    // land on the persona's scope; ensure it exists in their visible tree
+    state.scopeId = p.landingScope;
+    renderRail(); renderTree(); render();
   }
-  function setTheme(id){ if(scope.kind==='root'||scope.kind==='library') T.setRoot(id||T.DEFAULT_THEME_ID);
-    else if(scope.kind==='branch') T.setLibrary(scope.id,id); else if(scope.kind==='station') T.setStation(scope.id,id); }
+  var pMenu=document.getElementById('pMenu'), pBtn=document.getElementById('personaBtn');
+  function renderPersonaMenu(){
+    pMenu.innerHTML='<div class="ph">Signed in as — switch role</div>'+D.personas.map(function(p){
+      return '<button role="menuitem" data-persona="'+p.id+'" aria-current="'+(p.id===state.personaId)+'">'+
+        '<span class="av">'+p.initials+'</span><span><span class="n">'+p.name+'</span><br>'+
+        '<span class="r">'+p.role+'</span><div class="note">'+p.note+'</div></span></button>';
+    }).join('');
+    [].forEach.call(pMenu.querySelectorAll('[data-persona]'),function(b){ b.addEventListener('click',function(){
+      state.personaId=b.getAttribute('data-persona'); pMenu.classList.remove('open'); pBtn.setAttribute('aria-expanded','false');
+      renderPersonaMenu(); applyPersona(); toast('Now viewing as '+persona().name); }); });
+  }
+  pBtn.addEventListener('click',function(){ var open=pMenu.classList.toggle('open'); pBtn.setAttribute('aria-expanded',String(open)); });
+  document.addEventListener('click',function(e){ if(!pMenu.contains(e.target)&&!pBtn.contains(e.target)) { pMenu.classList.remove('open'); pBtn.setAttribute('aria-expanded','false'); } });
 
-  // tabs
-  [].forEach.call(document.querySelectorAll('[data-tab]'),function(b){ b.addEventListener('click',function(){
-    var t=b.getAttribute('data-tab');
-    [].forEach.call(document.querySelectorAll('[data-tab]'),function(x){x.setAttribute('aria-selected',String(x===b));});
-    document.getElementById('tabSettings').style.display = t==='settings'?'':'none';
-    document.getElementById('tabStations').style.display = t==='stations'?'':'none';
-    if(t==='stations') renderStations();
-  });});
+  /* ---------- nav rail ---------- */
+  function renderRail(){
+    var rail=document.getElementById('rail'); var showIC=persona().showICTools;
+    rail.innerHTML=RAIL.filter(function(g){return !g.ic || showIC;}).map(function(g){
+      return '<div class="railgrp"><div class="gh">▾ '+g.group+'</div>'+
+        g.items.map(function(it){
+          return '<button class="item'+(it.sub?' sub':'')+(it.active?' active':'')+'" data-rail="'+it.label+'"'+(it.tab?' data-tab="'+it.tab+'"':'')+'>'+it.label+'</button>';
+        }).join('')+'</div>';
+    }).join('');
+    [].forEach.call(rail.querySelectorAll('[data-rail]'),function(b){ b.addEventListener('click',function(){
+      var tab=b.getAttribute('data-tab');
+      if(tab){ switchTab(tab); }
+      else { toast(b.getAttribute('data-rail')+' — not part of this demo'); }
+    }); });
+  }
 
+  /* ---------- scope tree ---------- */
+  function renderTree(){
+    var host=document.getElementById('treeBody');
+    var root=personaRoot();
+    host.innerHTML = renderNode(root, 0);
+    bindTree(host);
+  }
+  function nodeMatches(node){
+    if(!state.filter) return true;
+    if(node.label.toLowerCase().indexOf(state.filter)>=0) return true;
+    return (node.children||[]).some(nodeMatches);
+  }
+  function renderNode(node, depth){
+    if(!nodeMatches(node)) return '';
+    var hasKids=node.children && node.children.length;
+    var isExpanded=state.expanded.has(node.id) || !!state.filter;
+    var sel = node.id===state.scopeId;
+    var tw = hasKids ? (isExpanded?'▾':'▸') : '';
+    var tag = node.kind==='library'?'library':node.kind==='branch'?'branch':node.kind==='station'?'station':node.kind==='consortium'?'consortium':'';
+    var html='<div class="tnode'+(sel?' sel':'')+'" style="margin-left:'+(depth*12)+'px">'+
+      '<button class="tw" data-toggle="'+node.id+'" aria-label="expand">'+tw+'</button>'+
+      '<button class="lbl" data-select="'+node.id+'">'+node.label+(tag?' <span class="kindtag">'+tag+'</span>':'')+'</button>'+
+    '</div>';
+    if(hasKids && isExpanded){ html += node.children.map(function(c){return renderNode(c, depth+1);}).join(''); }
+    return html;
+  }
+  function bindTree(host){
+    [].forEach.call(host.querySelectorAll('[data-toggle]'),function(b){ b.addEventListener('click',function(){
+      var id=b.getAttribute('data-toggle'); if(state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id); renderTree(); }); });
+    [].forEach.call(host.querySelectorAll('[data-select]'),function(b){ b.addEventListener('click',function(){
+      state.scopeId=b.getAttribute('data-select'); state.pickerOpenFor=null; renderTree(); render(); }); });
+  }
+  document.getElementById('treeFind').addEventListener('input',function(){ state.filter=this.value.toLowerCase().trim(); renderTree(); });
+  document.getElementById('treeClr').addEventListener('click',function(){ state.filter=''; document.getElementById('treeFind').value=''; renderTree(); });
+
+  /* ---------- theme scope mapping (3-level product model) ---------- */
+  function themeKind(node){ if(!node) return 'inherit';
+    if(node.kind==='root') return 'root'; if(node.kind==='branch') return 'branch'; if(node.kind==='station') return 'station'; return 'inherit'; }
+  function stationBranch(id){ var s=D.stations.find(function(x){return x.id===id;}); return s?s.branchId:null; }
+  function themeOwn(node){ var k=themeKind(node);
+    if(k==='root') return localStorage.getItem('c9sc.theme.root');
+    if(k==='branch') return T.getLibrary(node.id);
+    if(k==='station') return T.getStation(node.id); return null; }
+  function themeEffective(node){ var k=themeKind(node);
+    if(k==='station'){ return T.resolve(stationBranch(node.id), node.id); }
+    if(k==='branch'){ var b=T.getLibrary(node.id); return {id:b||T.getRoot(), source:b?'branch':(localStorage.getItem('c9sc.theme.root')?'root':'default')}; }
+    return {id:T.getRoot(), source: localStorage.getItem('c9sc.theme.root')?'root':'default'}; }
+  function setThemeAt(node,id){ var k=themeKind(node);
+    if(k==='root') T.setRoot(id||T.DEFAULT_THEME_ID);
+    else if(k==='branch') T.setLibrary(node.id,id);
+    else if(k==='station') T.setStation(node.id,id); }
+
+  /* ---------- tabs ---------- */
+  function switchTab(tab){ state.tab=tab;
+    [].forEach.call(document.querySelectorAll('.tabs [data-tab]'),function(x){x.setAttribute('aria-selected',String(x.getAttribute('data-tab')===tab));});
+    document.getElementById('tabSettings').style.display = tab==='settings'?'':'none';
+    document.getElementById('tabStations').style.display = tab==='stations'?'':'none';
+    if(tab==='stations') renderStations();
+  }
+  [].forEach.call(document.querySelectorAll('.tabs [data-tab]'),function(b){ b.addEventListener('click',function(){ switchTab(b.getAttribute('data-tab')); }); });
+
+  document.getElementById('findToggle').addEventListener('click',function(){ state.findOpen=!state.findOpen;
+    document.getElementById('findField').classList.toggle('open',state.findOpen);
+    if(state.findOpen) document.getElementById('findInput').focus(); });
+  document.getElementById('findInput').addEventListener('input',function(){ state.filter=this.value.toLowerCase().trim(); renderSections(); });
+  document.getElementById('collapseAll').addEventListener('click',function(){
+    var allIds=D.settings.sections.map(function(s){return s.id;});
+    var allCollapsed = allIds.every(function(id){return state.collapsedSections.has(id);});
+    state.collapsedSections = allCollapsed ? new Set() : new Set(allIds);
+    this.querySelector('span').textContent = allCollapsed ? '▾' : '▸';
+    renderSections();
+  });
+  document.getElementById('submitBtn').addEventListener('click',function(){ toast('Settings saved for '+scopeNode().label); });
+
+  /* ---------- main render ---------- */
   function render(){
-    document.getElementById('scopeLine').innerHTML='Editing <b>'+scope.label+'</b> · settings shown are effective at this scope. The chevron on each row shows whether the value is inherited or overridden here.';
-    renderSections(document.getElementById('find').value.toLowerCase().trim());
+    var node=scopeNode();
+    document.getElementById('scopeTitle').textContent='SelfCheck Settings for '+node.label;
+    var kindTxt = node.kind==='root'?'the ROOT default all libraries inherit'
+      : node.kind==='library'?'this library (inherited by its branches and stations)'
+      : node.kind==='branch'?'this branch (overrides the library/ROOT value)'
+      : node.kind==='station'?'this single station (overrides branch, library and ROOT)'
+      : 'this scope';
+    document.getElementById('scopeCtx').innerHTML='Editing <b>'+node.label+'</b> — values apply to '+kindTxt+
+      '. The chevron on each row shows whether the value is inherited or overridden here.';
+    renderSections();
   }
 
-  function renderSections(filter){
+  function renderSections(){
     var host=document.getElementById('sections'); host.innerHTML='';
+    var filter=state.filter;
     D.settings.sections.forEach(function(sec){
-      var rows=sec.rows.filter(function(r){ return !filter || (sec.title+' '+r.label).toLowerCase().indexOf(filter)>=0; });
-      if(!rows.length) return;
-      var isOpen = open[sec.id] || !!filter;
-      var secEl=document.createElement('div'); secEl.className='section';
-      secEl.innerHTML='<button class="sec-hd" aria-expanded="'+isOpen+'"><span class="chev">▸</span>'+sec.title+
-        (sec.isNew?' <span class="newtag">NEW</span>':'')+'</button>'+
-        '<div class="sec-bd'+(isOpen?' open':'')+'">'+(sec.blurb?'<p class="sec-blurb">'+sec.blurb+'</p>':'')+'</div>';
-      var bd=secEl.querySelector('.sec-bd');
-      rows.forEach(function(r){ bd.appendChild(renderRow(sec,r)); });
-      host.appendChild(secEl);
-      secEl.querySelector('.sec-hd').addEventListener('click',function(){ open[sec.id]=!(open[sec.id]); render(); });
+      // gather rows (flat + grouped) for filter test
+      var flatRows=(sec.rows||[]).slice();
+      (sec.groups||[]).forEach(function(g){ g.rows.forEach(function(r){flatRows.push(r);}); });
+      var visible = flatRows.filter(function(r){ return !filter || (sec.title+' '+r.label).toLowerCase().indexOf(filter)>=0; });
+      if(filter && visible.length===0 && sec.title.toLowerCase().indexOf(filter)<0) return;
+      var isOpen = (!state.collapsedSections.has(sec.id)) || !!filter;
+      var el=document.createElement('div'); el.className='section';
+      el.innerHTML='<button class="sec-hd" aria-expanded="'+isOpen+'"><span class="chev">▸</span>'+sec.title+
+        (sec.isNew?' <span class="newtag">NEW</span>':'')+'</button><div class="sec-bd'+(isOpen?' open':'')+'">'+
+        (sec.blurb?'<p class="sec-blurb">'+sec.blurb+'</p>':'')+'</div>';
+      var bd=el.querySelector('.sec-bd');
+      (sec.rows||[]).forEach(function(r){ if(!filter || (sec.title+' '+r.label).toLowerCase().indexOf(filter)>=0) bd.appendChild(renderRow(sec,r)); });
+      (sec.groups||[]).forEach(function(g){
+        var gr=g.rows.filter(function(r){ return !filter || (sec.title+' '+g.title+' '+r.label).toLowerCase().indexOf(filter)>=0; });
+        if(!gr.length) return;
+        var gt=document.createElement('div'); gt.className='grouptitle'; gt.textContent=g.title; bd.appendChild(gt);
+        var gb=document.createElement('div'); gb.className='groupbox';
+        gr.forEach(function(r){ gb.appendChild(renderRow(sec,r)); });
+        bd.appendChild(gb);
+      });
+      host.appendChild(el);
+      el.querySelector('.sec-hd').addEventListener('click',function(){
+        if(state.collapsedSections.has(sec.id)) state.collapsedSections.delete(sec.id); else state.collapsedSections.add(sec.id);
+        renderSections();
+      });
     });
   }
 
   function renderRow(sec, r){
-    var row=document.createElement('div'); row.className='row';
+    var node=scopeNode();
+    var row=document.createElement('div'); row.className='row'+(r.type==='textarea'?' rowfull':'');
+    var chev, control;
+
     if(r.type==='theme'){
-      var eff=themeEffective(), own=themeOwnValue();
-      var overridden = scope.kind==='root' ? !!localStorage.getItem('c9sc.theme.root') : !!own;
-      var valHtml='<div class="themeval">'+swatch(eff.id)+'<span style="font-weight:700">'+T.getTheme(eff.id).label+'</span>'+
-        '<button data-openpick>Change…</button></div>';
-      row.innerHTML='<button class="scopechip '+(overridden?'over':'')+'" data-scope aria-label="Scope"><span class="ci">'+(overridden?'●':'⌄')+'</span>'+(overridden?(scope.kind==='root'?'Set at ROOT':'Overridden here'):'Inherited')+'</button>'+
-        '<div class="rk"><div class="k">'+r.label+'</div><div class="h">'+(r.help||'')+'</div></div>'+
-        '<div class="rv">'+valHtml+'</div>';
+      var eff=themeEffective(node), own=themeOwn(node), k=themeKind(node);
+      var overridden = k==='root' ? !!localStorage.getItem('c9sc.theme.root') : !!own;
+      chev='<button class="scopechev '+(overridden?'over':'')+'" data-scope aria-label="Scope for this setting">'+(overridden?'●':'▾')+'</button>';
+      if(k==='inherit'){
+        control='<div class="themeval">'+swatch(eff.id)+'<span style="font-weight:700">'+T.getTheme(eff.id).label+'</span>'+
+          '<span class="inheritnote">inherited — override at a branch or station</span></div>';
+      } else {
+        control='<div class="themeval">'+swatch(eff.id)+'<span style="font-weight:700">'+T.getTheme(eff.id).label+'</span>'+
+          '<button class="chg" data-openpick>Change…</button></div>';
+      }
+      row.innerHTML=chev+'<div class="rk"><div class="k">'+r.label+'</div>'+(r.help?'<div class="help">'+r.help+'</div>':'')+'</div>'+
+        '<div class="rc">'+control+'</div>';
       // picker
-      var pick=document.createElement('div'); pick.className='pick'+(pickerOpenFor===r.key?' open':''); pick.innerHTML='<div class="pgrid"></div>';
-      row.appendChild(pick);
-      if(pickerOpenFor===r.key){ var grid=pick.querySelector('.pgrid');
+      if(state.pickerOpenFor===r.key && k!=='inherit'){
+        var pick=document.createElement('div'); pick.className='pick open'; pick.innerHTML='<div class="pgrid"></div>';
+        row.appendChild(pick);
+        var grid=pick.querySelector('.pgrid');
         T.THEMES.forEach(function(t){ var c=document.createElement('button'); c.className='pcard'+(t.id===eff.id?' sel':''); c.type='button';
           c.setAttribute('aria-label','Use '+t.label); c.innerHTML='<div class="mini"><canvas></canvas></div><div class="nm">'+t.label+'</div>';
           grid.appendChild(c); T.drawThumbnail(c.querySelector('canvas'),t.id,true);
-          c.addEventListener('click',function(){ setTheme(t.id); pickerOpenFor=null; toast(t.label+' set at '+scope.label); render(); }); });
+          c.addEventListener('click',function(){ setThemeAt(node,t.id); state.pickerOpenFor=null; toast(t.label+' set at '+node.label); render(); }); });
       }
-      row.querySelector('[data-openpick]').addEventListener('click',function(){ pickerOpenFor = pickerOpenFor===r.key?null:r.key; render(); });
-      row.querySelector('[data-scope]').addEventListener('click',function(e){ openScopeMenu(e.currentTarget, r); });
-    } else {
-      row.innerHTML='<button class="scopechip" data-scope aria-label="Scope"><span class="ci">⌄</span>Inherited</button>'+
-        '<div class="rk"><div class="k">'+r.label+'</div></div>'+
-        '<div class="rv">'+(r.value||'')+'</div>';
-      row.querySelector('[data-scope]').addEventListener('click',function(e){ openScopeMenu(e.currentTarget, r, true); });
+      var op=row.querySelector('[data-openpick]'); if(op) op.addEventListener('click',function(){ state.pickerOpenFor = state.pickerOpenFor===r.key?null:r.key; render(); });
+      row.querySelector('[data-scope]').addEventListener('click',function(e){ openScopeMenu(e.currentTarget, r, node); });
+      return row;
     }
+
+    // non-theme rows (display-only, realistic)
+    chev='<button class="scopechev" data-scope aria-label="Scope for this setting">▾</button>';
+    if(r.type==='toggle'){
+      control='<button class="cbx" role="checkbox" aria-checked="'+!!r.value+'" aria-label="'+r.label+'" data-toggle>'+(r.value?'✓':'')+'</button>';
+    } else if(r.type==='textarea'){
+      control='<div style="width:100%">'+(r.lang?'<div class="lang">'+r.lang+'</div>':'')+'<textarea placeholder="'+(r.lang||'')+' receipt lines">'+(r.value||'')+'</textarea></div>';
+    } else if(r.type==='number'){
+      control='<input type="number" value="'+(r.value||'')+'">';
+    } else {
+      control='<input type="text" value="'+(r.value||'')+'" placeholder="'+(r.placeholder||'')+'">';
+    }
+    var rk='<div class="rk"><div class="k">'+r.label+'</div>'+(r.tip?'<div class="tip">'+r.tip+'</div>':'')+'</div>';
+    if(r.type==='textarea'){ row.innerHTML=chev+rk+'<div class="rc">'+control+'</div>'; }
+    else { row.innerHTML=chev+rk+'<div class="rc">'+control+'</div>'; }
+    var tg=row.querySelector('[data-toggle]');
+    if(tg) tg.addEventListener('click',function(){ var on=tg.getAttribute('aria-checked')==='true'; tg.setAttribute('aria-checked',String(!on)); tg.textContent=!on?'✓':''; });
+    row.querySelector('[data-scope]').addEventListener('click',function(e){ openScopeMenu(e.currentTarget, r, node, true); });
     return row;
   }
 
   var scopeMenu=document.getElementById('scopeMenu');
-  function openScopeMenu(anchor, r, displayOnly){
+  function openScopeMenu(anchor, r, node, displayOnly){
     var rect=anchor.getBoundingClientRect();
-    scopeMenu.style.left=rect.left+'px'; scopeMenu.style.top=(rect.bottom+6)+'px';
-    if(displayOnly){ scopeMenu.innerHTML='<button disabled style="color:#94a3b8">This setting is display-only in the demo</button>'; }
-    else {
-      var overridden = scope.kind==='root' ? !!localStorage.getItem('c9sc.theme.root') : !!themeOwnValue();
-      scopeMenu.innerHTML='<button data-act="override">Override at '+scope.label+'…</button>'+
-        (overridden && scope.kind!=='root' ? '<button data-act="revert">Revert to inherited</button>':'')+
-        (scope.kind==='root'?'':'');
-      scopeMenu.querySelector('[data-act="override"]').addEventListener('click',function(){ scopeMenu.classList.remove('open'); pickerOpenFor=r.key; render(); });
-      var rev=scopeMenu.querySelector('[data-act="revert"]'); if(rev) rev.addEventListener('click',function(){ scopeMenu.classList.remove('open'); setTheme(null); toast('Reverted to inherited'); render(); });
+    scopeMenu.style.left=Math.max(8,rect.left)+'px'; scopeMenu.style.top=(rect.bottom+6)+'px';
+    if(displayOnly){
+      scopeMenu.innerHTML='<div class="mh">'+node.label+'</div><button disabled>Inherited from parent</button>'+
+        '<button disabled>Override here (display-only in demo)</button>';
+    } else {
+      var k=themeKind(node);
+      if(k==='inherit'){ scopeMenu.innerHTML='<div class="mh">'+node.label+'</div><button disabled>Inherited from ROOT</button><button disabled>Override the theme at a branch or station</button>'; }
+      else {
+        var overridden = k==='root' ? !!localStorage.getItem('c9sc.theme.root') : !!themeOwn(node);
+        scopeMenu.innerHTML='<div class="mh">Attract theme · '+node.label+'</div>'+
+          '<button data-act="override">Override at '+node.label+'…</button>'+
+          (overridden && k!=='root' ? '<button data-act="revert">Revert to inherited</button>' : '')+
+          (overridden && k==='root' ? '<button data-act="revert">Reset ROOT to built-in default</button>' : '');
+        scopeMenu.querySelector('[data-act="override"]').addEventListener('click',function(){ scopeMenu.classList.remove('open'); state.pickerOpenFor=r.key; render(); });
+        var rev=scopeMenu.querySelector('[data-act="revert"]'); if(rev) rev.addEventListener('click',function(){ scopeMenu.classList.remove('open');
+          if(k==='root'){ try{localStorage.removeItem('c9sc.theme.root');}catch(e){} } else setThemeAt(node,null); toast('Reverted to inherited'); render(); });
+      }
     }
     scopeMenu.classList.add('open');
   }
-  document.addEventListener('click',function(e){ if(!scopeMenu.contains(e.target) && !e.target.closest('[data-scope]')) scopeMenu.classList.remove('open'); });
+  document.addEventListener('click',function(e){ if(!scopeMenu.contains(e.target)&&!e.target.closest('[data-scope]')) scopeMenu.classList.remove('open'); });
 
+  /* ---------- stations tab ---------- */
   function renderStations(){
+    document.getElementById('stationsCtx').innerHTML='Stations under <b>Pioneer Library System</b>. Group membership, install tokens and naming — plus the new per-station attract-theme override (resolved last, winning over branch, library and ROOT).';
     var tbody=document.getElementById('stationRows'); tbody.innerHTML='';
     D.stations.forEach(function(s){
       var own=T.getStation(s.id); var r=T.resolve(s.branchId,s.id);
-      var opts='<option value="">Inherit ('+T.getTheme(r.source==='station'?(T.getLibrary(s.branchId)||T.getRoot()):r.id).label+')</option>'+
+      var inheritedLabel = T.getTheme(T.getLibrary(s.branchId)||T.getRoot()).label;
+      var opts='<option value="">Inherit ('+inheritedLabel+')</option>'+
         T.THEMES.map(function(t){return '<option value="'+t.id+'"'+(own===t.id?' selected':'')+'>'+t.label+'</option>';}).join('');
       var tr=document.createElement('tr');
       tr.innerHTML='<td><span class="stn">'+s.label+'</span></td><td>'+s.branchLabel+'</td><td>'+s.group+'</td><td><code>'+s.token+'</code></td>'+
@@ -247,12 +500,12 @@
       tbody.appendChild(tr);
     });
     [].forEach.call(tbody.querySelectorAll('[data-st]'),function(sel){ sel.addEventListener('change',function(){
-      T.setStation(sel.getAttribute('data-st'), sel.value||null); toast('Station override updated'); renderStations(); }); });
+      T.setStation(sel.getAttribute('data-st'), sel.value||null); toast('Station override updated'); renderStations(); if(state.tab==='settings') render(); }); });
   }
 
-  document.getElementById('find').addEventListener('input',render);
-  window.addEventListener('storage',function(){ render(); if(document.getElementById('tabStations').style.display!=='none') renderStations(); });
-  render();
+  window.addEventListener('storage',function(){ render(); if(state.tab==='stations') renderStations(); });
+
+  renderPersonaMenu(); applyPersona();
 })();
 </script>
 </body>

@@ -98,51 +98,131 @@ window.C9DATA = {
     { title: 'Free Tech Help', body: 'Tuesdays & Thursdays, 2–4 PM', grad: ['#ea580c', '#fb923c'] },
   ],
 
-  /* SelfCheck Settings catalog for the backend console. `theme` row is the one
-   * interactive setting; the rest are display-only, seated for realism.
-   * NEW flags the per-station display config that does not exist today. */
+  /* Personas — the real Cloud9 Web Console is one app used by different roles,
+   * scoped by login. The backend console switches between these. */
+  personas: [
+    { id: 'tech', name: 'Dana Ruiz', role: 'EnvisionWare Technician', org: 'EnvisionWare Support',
+      initials: 'DR', landingScope: 'root', showICTools: true, canManageStations: true,
+      note: 'Professional Services / support. Works from ROOT across all consortia and libraries; sets the ROOT defaults customers inherit.' },
+    { id: 'manager', name: 'Chris Johnson', role: 'Library Manager', org: 'Pioneer Library System',
+      initials: 'CJ', landingScope: 'pioneer', showICTools: false, canManageStations: true,
+      note: 'Library staff/admin. Scoped to their own library; overrides the ROOT defaults for their branches and stations.' },
+  ],
+
+  /* Faithful scope tree for the Web Console: ROOT > Consortia / Libraries >
+   * library > branch > station. Pioneer is the functional library (its
+   * branches/stations drive the live theme resolution); the sibling libraries
+   * are there for realism (display-only), like the real console's long list. */
+  consoleTree: {
+    id: 'root', label: 'ROOT', kind: 'root', children: [
+      { id: 'grp-consortia', label: 'Consortia', kind: 'group', children: [
+        { id: 'metro-consortium', label: 'Metro Library Consortium', kind: 'consortium', children: [] },
+      ] },
+      { id: 'grp-libraries', label: 'Libraries', kind: 'group', children: [
+        { id: 'pioneer', label: 'Pioneer Library System', kind: 'library', children: [
+          { id: 'br-main', label: 'Main Street Branch', kind: 'branch', children: [
+            { id: 'st-101', label: 'Front Lobby Kiosk', kind: 'station' },
+            { id: 'st-102', label: "Children's Area Kiosk", kind: 'station' },
+          ] },
+          { id: 'br-river', label: 'Riverside Branch', kind: 'branch', children: [
+            { id: 'st-103', label: 'Entrance Kiosk', kind: 'station' },
+          ] },
+        ] },
+        { id: 'lib-oakdale', label: 'Oakdale County Library', kind: 'library', children: [] },
+        { id: 'lib-summit', label: 'Summit Regional Library', kind: 'library', children: [] },
+        { id: 'lib-harbor', label: 'Harbor City Libraries', kind: 'library', children: [] },
+        { id: 'lib-test', label: 'A Library Test 789', kind: 'library', children: [] },
+      ] },
+    ],
+  },
+
+  /* SelfCheck Settings catalog mirroring the real Cloud9 Web Console
+   * (SelfCheck > Settings). The Attract Screen theme row is the one live,
+   * functional setting (drives the kiosk); every other row reproduces a real
+   * setting and is interactive-looking but display-only in the demo. Each row
+   * carries the scope chevron (inherit/override) like the real console. */
   settings: {
     sections: [
       {
-        id: 'attract', title: 'Attract Screen', isNew: true, functional: true,
-        blurb: 'Selects the attract-screen look. Scoped like every SelfCheck display setting; a station can override.',
+        id: 'attract', title: 'Attract Screen', isNew: true,
+        blurb: 'Selects the attract-screen look shown while the station is idle. Scoped like every SelfCheck display setting; a station can override.',
         rows: [
           { key: 'attractTheme', label: 'Attract screen theme', type: 'theme', help: 'Named visual asset applied to the attract screen when the station is idle.' },
         ],
       },
       {
-        id: 'receipt', title: 'Receipt Content', rows: [
-          { key: 'receiptHeader', label: 'Receipt header text', value: 'Pioneer Library System', type: 'text' },
-          { key: 'receiptFooter', label: 'Receipt footer text', value: 'Thank you for visiting!', type: 'text' },
-          { key: 'showDueDates', label: 'Show due dates on receipt', value: 'On', type: 'toggle' },
-          { key: 'showBalance', label: 'Show account balance', value: 'On', type: 'toggle' },
+        id: 'patronid', title: 'Patron ID / PIN Settings',
+        rows: [
+          { key: 'clearIdName', label: 'Clear ID & Name in Report Data', type: 'toggle', value: true },
         ],
       },
       {
-        id: 'alertimg', title: 'Image Path for Alert Type', rows: [
-          { key: 'imgSecurity', label: 'Security alert image', value: '/assets/alerts/security.png', type: 'path' },
-          { key: 'imgHold', label: 'Hold alert image', value: '/assets/alerts/hold.png', type: 'path' },
-          { key: 'imgDamaged', label: 'Damaged item image', value: '/assets/alerts/damaged.png', type: 'path' },
+        id: 'patroncomm', title: 'Patron Communication Settings',
+        groups: [
+          { title: 'Receipt Content', rows: [
+            { key: 'receiptHeader', label: 'Receipt Header Lines', type: 'textarea', lang: 'English', value: '' },
+            { key: 'receiptFooter', label: 'Receipt Footer Lines', type: 'textarea', lang: 'English', value: '' },
+          ] },
+          { title: 'Checkin Receipt', rows: [
+            { key: 'ciPrint', label: 'Checkin: Print Receipt', type: 'toggle', value: true },
+            { key: 'ciSms', label: 'Checkin SMS Receipt', type: 'toggle', value: true },
+            { key: 'ciEmail', label: 'Checkin: Send Email Receipt', type: 'toggle', value: true },
+          ] },
+          { title: 'Checkin Receipt Details', rows: [
+            { key: 'ciPatronName', label: 'Include Patron Name', type: 'toggle', value: false },
+            { key: 'ciPatronId', label: 'Include Patron ID', type: 'toggle', value: false },
+            { key: 'ciFines', label: 'Include Fines and Fees Amount', type: 'toggle', value: true },
+            { key: 'ciHolds', label: 'Include Hold Items Count', type: 'toggle', value: true },
+            { key: 'ciSession', label: 'Include Total Items Checked In During Session', type: 'toggle', value: true },
+            { key: 'ciAccount', label: 'Include Total Items Checked Out On Account', type: 'toggle', value: true },
+          ] },
+          { title: 'Checkout Receipt', rows: [
+            { key: 'coPrint', label: 'Checkout: Print Receipt', type: 'toggle', value: true },
+            { key: 'coSms', label: 'Checkout SMS Receipt', type: 'toggle', value: true },
+            { key: 'coEmail', label: 'Checkout: Send Email Receipt', type: 'toggle', value: true },
+          ] },
+          { title: 'Checkout Receipt Details', rows: [
+            { key: 'coPatronName', label: 'Include Patron Name', type: 'toggle', value: false },
+            { key: 'coPatronId', label: 'Include Patron ID', type: 'toggle', value: false },
+            { key: 'coFines', label: 'Include Fines and Fees Amount', type: 'toggle', value: true },
+            { key: 'coHolds', label: 'Include Hold Items Count', type: 'toggle', value: true },
+            { key: 'coSession', label: 'Include Total Items Checked Out During Session', type: 'toggle', value: true },
+            { key: 'coAccount', label: 'Include Total Items Checked Out On Account', type: 'toggle', value: true },
+          ] },
         ],
       },
       {
-        id: 'sounds', title: 'Sounds', rows: [
-          { key: 'soundSuccess', label: 'Success sound', value: 'Chime', type: 'select' },
-          { key: 'soundError', label: 'Error sound', value: 'Buzz', type: 'select' },
-          { key: 'soundVolume', label: 'Volume', value: '70%', type: 'select' },
+        id: 'checkin', title: 'Checkin Settings',
+        rows: [
+          { key: 'imgAlert00', label: 'Image Path for Alert Type Unknown (SIP Value 00)', type: 'path', value: '/assets/images/returns_cart_left_gray.png', tip: 'Display name required; image file optional' },
+          { key: 'imgAlert01', label: 'Image Path for Returned Items that are on Hold at this Library (SIP Alert Type 01)', type: 'path', value: '/assets/images/returns_bin_right_black.png', tip: 'Display name required; image file optional' },
+          { key: 'imgAlert02', label: 'Image Path for Alert Type 02 (Hold for other branch)', type: 'path', value: '/assets/images/returns_cart_left_gray.png', tip: 'Display name required; image file optional' },
+          { key: 'imgAlert03', label: 'Image Path for Alert Type 03 (Hold for ILL)', type: 'path', value: '/assets/images/returns_cart_left_gray.png', tip: 'Display name required; image file optional' },
+          { key: 'imgAlert04', label: 'Image Path for Alert Type 04 (Sent to other branch)', type: 'path', value: '/assets/images/returns_cart_left_gray.png', tip: 'Display name required; image file optional' },
+          { key: 'imgAlert05', label: 'Image Path for Alert Type 05 (Recall or Hold)', type: 'path', value: '/assets/images/returns_cart_left_gray.png', tip: 'Display name required; image file optional' },
+          { key: 'imgAlert99', label: 'Image Path for Alert Type 99 (Other)', type: 'path', value: '/assets/images/returns_cart_left_gray.png', tip: 'Display name required; image file optional' },
+          { key: 'ciIncompleteSets', label: 'Process Incomplete Sets', type: 'toggle', value: false },
         ],
       },
       {
-        id: 'rfid', title: 'RFID Options', rows: [
-          { key: 'rfidSecurity', label: 'Security mode', value: 'AFI', type: 'select' },
-          { key: 'rfidRetry', label: 'Read retry count', value: '2', type: 'number' },
-          { key: 'rfidTagTypes', label: 'Supported tag types', value: 'ISO 15693', type: 'select' },
+        id: 'checkout', title: 'Checkout Settings',
+        rows: [
+          { key: 'forceReceiptMedia', label: 'Force Receipt for Media Types', type: 'text', value: '', placeholder: 'Force Receipt for Media Types' },
+          { key: 'coIncompleteSets', label: 'Process Incomplete Sets', type: 'toggle', value: false },
         ],
       },
       {
-        id: 'history', title: 'History Retention', rows: [
-          { key: 'histDays', label: 'Transaction history (days)', value: '30', type: 'number' },
-          { key: 'histClear', label: 'Clear session on logout', value: 'On', type: 'toggle' },
+        id: 'rfid', title: 'RFID (within SelfCheck)',
+        rows: [
+          { key: 'ignoreRfidSecFail', label: 'Ignore RFID Security Failure Alerts During Checkout', type: 'toggle', value: false },
+        ],
+      },
+      {
+        id: 'misc', title: 'Miscellaneous Settings',
+        rows: [
+          { key: 'soundSuccess', label: 'Successful Sound Enabled', type: 'toggle', value: false },
+          { key: 'soundError', label: 'Error Sound Enabled', type: 'toggle', value: true },
+          { key: 'historyDays', label: 'How Long to Retain Self Check History (Days)', type: 'number', value: '7' },
         ],
       },
     ],
