@@ -155,7 +155,7 @@
 </head>
 <body data-surface="Backend console">
   <div class="appbar">
-    <span class="brandlogo"><span class="book"></span>Cloud9 <span class="prod">Web Console</span></span>
+    <span class="brandlogo"><span class="book" id="bwMark" style="background:none;-webkit-mask:none;mask:none;display:inline-flex;align-items:center;justify-content:center"></span>Cloud9 <span class="prod">Web Console</span></span>
     <span class="spacer"></span>
     <button class="icobtn" title="Search" aria-label="Search">🔍</button>
     <button class="icobtn" title="Help" aria-label="Help">❓</button>
@@ -209,6 +209,7 @@
   <div class="menu" id="scopeMenu" role="menu"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="../workbench-data/brand.js"></script>
 <script src="../workbench-data/c9selfcheck-data.js"></script>
 <script src="../workbench-data/theme-engine.js"></script>
 <script src="../workbench-data/notes-sync.js"></script>
@@ -219,12 +220,49 @@
 
   var RAIL = [
     { group:'Setup', items:[
-      {label:'Platform'},{label:'Stations',tab:'stations'},{label:'Reservations'},{label:'Lockers'},
-      {label:'SelfCheck',sub:false,head:true},{label:'Settings',sub:true,active:true,tab:'settings'},
-      {label:'Account Mgmt'},{label:'Print'} ] },
-    { group:'Staff', items:[ {label:'Guests'},{label:'Reservations'},{label:'Lockers'},{label:'Analytics'} ] },
-    { group:'IC Tools', ic:true, items:[ {label:'Import PCR'},{label:'Export PCR'} ] },
+      {label:'Platform', area:'platform'},
+      {label:'Stations', tab:'stations'},
+      {label:'Reservations', area:'reservations'},
+      {label:'Lockers', area:'lockers'},
+      {label:'SelfCheck', head:true, route:'settings'},
+      {label:'Settings', sub:true, tab:'settings'},
+      {label:'Account Mgmt', area:'accountmgmt'},
+      {label:'Print', area:'print'} ] },
+    { group:'Staff', items:[
+      {label:'Guests', area:'staff-guests'},
+      {label:'Reservations', area:'staff-reservations'},
+      {label:'Lockers', area:'staff-lockers'},
+      {label:'Analytics', area:'analytics'} ] },
+    { group:'IC Tools', ic:true, items:[
+      {label:'Import PCR', area:'import-pcr'},
+      {label:'Export PCR', area:'export-pcr'} ] },
   ];
+  function itemKey(it){ return it.tab || it.area || (it.route ? it.route : it.label); }
+
+  /* ---------- generic per-scope value store (persisted) ----------
+   * Every non-theme setting persists per scope with inherit/override, mirroring
+   * how the real console resolves settings down the scope tree. */
+  function vKey(scopeId, key){ return 'c9sc.set.' + scopeId + '.' + key; }
+  function getOwn(scopeId, key){ try { var v = localStorage.getItem(vKey(scopeId, key)); return v === null ? undefined : JSON.parse(v); } catch (e) { return undefined; } }
+  function setOwn(scopeId, key, val){ try { localStorage.setItem(vKey(scopeId, key), JSON.stringify(val)); } catch (e) {} }
+  function clearOwn(scopeId, key){ try { localStorage.removeItem(vKey(scopeId, key)); } catch (e) {} }
+
+  // Parent map + scope chain over the console tree (self first, then ancestors up to ROOT).
+  var PARENT = {};
+  (function walk(n, p){ PARENT[n.id] = p; (n.children || []).forEach(function (c){ walk(c, n); }); })(D.consoleTree, null);
+  function chainOf(id){ var out = [], x = findNode(id); while (x){ out.push(x.id); x = PARENT[x.id]; } return out; }
+
+  // Effective value of a row at a scope: first scope up the chain with an own
+  // value wins; else the row's default. Returns {value, source, own}.
+  function effVal(scopeId, row){
+    var ch = chainOf(scopeId);
+    for (var i = 0; i < ch.length; i++){
+      var v = getOwn(ch[i], row.key);
+      if (v !== undefined) return { value: v, source: ch[i], own: i === 0 };
+    }
+    return { value: row.value, source: 'default', own: false };
+  }
+  function scopeLabel(id){ var n = findNode(id); return n ? n.label : (id === 'default' ? 'built-in default' : id); }
 
   var _asParam = new URLSearchParams(location.search).get('as');
   var _pid = (_asParam==='manager'||_asParam==='tech') ? _asParam : 'tech';
@@ -235,7 +273,7 @@
     expanded: new Set(['root','grp-libraries','pioneer','br-main','br-river','grp-consortia']),
     collapsedSections: new Set(),
     tab: 'settings',
-    railActive: 'Settings',
+    railActive: 'settings',
     filter: '',
     findOpen: false,
     pickerOpenFor: null,
@@ -308,21 +346,24 @@
   /* ---------- nav rail ---------- */
   function renderRail(){
     var rail=document.getElementById('rail'); var showIC=persona().showICTools;
-    rail.innerHTML=RAIL.filter(function(g){return !g.ic || showIC;}).map(function(g){
+    var html=RAIL.filter(function(g){return !g.ic || showIC;}).map(function(g){
       return '<div class="railgrp"><div class="gh">▾ '+g.group+'</div>'+
         g.items.map(function(it){
-          var active = it.label===state.railActive;
-          return '<button class="item'+(it.sub?' sub':'')+(active?' active':'')+'" data-rail="'+it.label+'">'+it.label+'</button>';
+          var k=itemKey(it); var active=(k===state.railActive);
+          return '<button class="item'+(it.sub?' sub':'')+(active?' active':'')+'" data-key="'+k+'">'+it.label+'</button>';
         }).join('')+'</div>';
     }).join('');
-    [].forEach.call(rail.querySelectorAll('[data-rail]'),function(b){ b.addEventListener('click',function(){
-      routeRail(b.getAttribute('data-rail'));
-    }); });
+    html+='<div id="railPoweredBy" style="margin-top:22px;padding:14px 8px 4px;border-top:1px solid var(--line)"></div>';
+    rail.innerHTML=html;
+    function itemByKey(k){ for(var gi=0;gi<RAIL.length;gi++){ var its=RAIL[gi].items; for(var i=0;i<its.length;i++){ if(itemKey(its[i])===k) return its[i]; } } return null; }
+    [].forEach.call(rail.querySelectorAll('[data-key]'),function(b){ b.addEventListener('click',function(){ routeItem(itemByKey(b.getAttribute('data-key'))); }); });
+    var pb=document.getElementById('railPoweredBy'); if(pb && window.C9BRAND) pb.innerHTML=C9BRAND.poweredBy();
   }
-  function routeRail(label){
-    if(label==='SelfCheck' || label==='Settings'){ state.railActive='Settings'; showSelfCheck('settings'); }
-    else if(label==='Stations'){ state.railActive='Stations'; showSelfCheck('stations'); }
-    else { state.railActive=label; showArea(label); }
+  function routeItem(it){
+    if(!it) return;
+    if(it.tab==='stations'){ state.railActive='stations'; showSelfCheck('stations'); }
+    else if(it.tab==='settings' || it.route==='settings' || it.head){ state.railActive='settings'; showSelfCheck('settings'); }
+    else if(it.area){ state.railActive=it.area; showArea(it.area); }
     renderRail();
   }
   function showSelfCheck(tab){
@@ -330,22 +371,30 @@
     document.getElementById('areaPanel').style.display='none';
     switchTab(tab);
   }
-  function showArea(label){
+  // Render any area's settings catalog with the same interactive engine as SelfCheck.
+  function showArea(areaId){
     document.getElementById('selfcheckView').style.display='none';
     var host=document.getElementById('areaPanel'); host.style.display='';
-    var info=AREA_INFO[label]||{icon:'📋',tagline:label,desc:'Part of the Cloud9 Web Console.'};
+    var area=D.areas && D.areas[areaId];
     var node=scopeNode();
-    var groupsHtml = info.groups ? '<div style="margin-top:16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:8px">Setting groups in this area</div>'+
-      info.groups.map(function(g){return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f1f5f9"><span class="scopechev" aria-hidden="true">▾</span><span style="font-weight:600;color:#1f2937">'+g+'</span></div>';}).join('')+'</div>' : '';
+    if(!area){
+      host.innerHTML='<div class="mainhead"><h1>'+areaId+'</h1></div><p class="scopectx">Editing <b>'+node.label+'</b>.</p>'+
+        '<div class="section" style="padding:22px">Part of the Cloud9 Web Console.</div>';
+      return;
+    }
+    var techBadge = area.techOnly ? ' <span class="newtag" style="background:#e0e7ff;color:#3730a3">TECHNICIAN</span>' : '';
     host.innerHTML=
-      '<div class="mainhead"><h1>'+info.icon+' '+label+'</h1></div>'+
-      '<p class="scopectx">Editing <b>'+node.label+'</b> · '+info.tagline+'.</p>'+
-      '<div class="section" style="padding:22px"><div style="font-size:15px;color:#334155;max-width:64ch;line-height:1.55">'+info.desc+'</div>'+
-      groupsHtml+
-      '<div style="margin-top:18px;padding:14px 16px;background:#f8fbfe;border:1px dashed #cbd5e1;border-radius:10px;font-size:13.5px;color:#475569">'+
-        '<b>Workbench status:</b> this build focuses on the interactive <b>SelfCheck → Settings</b> area (left). '+
-        'This area is shown to place SelfCheck in the real console. It can be built out to the same interactive fidelity once the real screens are provided.'+
-      '</div></div>';
+      '<div class="mainhead"><h1>'+area.icon+' '+area.title+techBadge+'</h1>'+
+        '<button class="findbtn" id="areaFindToggle">Find a Setting</button></div>'+
+      '<p class="scopectx">Editing <b>'+node.label+'</b> · '+area.blurb+' The chevron on each row shows whether the value is inherited or overridden here.</p>'+
+      '<div class="findfield" id="areaFindField"><span class="mag">🔍</span><input id="areaFindInput" placeholder="Find a setting…" aria-label="Find a setting"></div>'+
+      '<div id="areaSections"></div>'+
+      '<div class="submitbar"><button class="submit" id="areaSubmit">Submit</button></div>';
+    renderCatalog(area.sections, document.getElementById('areaSections'), '');
+    document.getElementById('areaSubmit').addEventListener('click',function(){ toast('Settings saved for '+node.label); });
+    var aft=document.getElementById('areaFindToggle'), aff=document.getElementById('areaFindField');
+    aft.addEventListener('click',function(){ var open=aff.classList.toggle('open'); if(open) document.getElementById('areaFindInput').focus(); });
+    document.getElementById('areaFindInput').addEventListener('input',function(){ renderCatalog(area.sections, document.getElementById('areaSections'), this.value.toLowerCase().trim()); });
   }
 
   /* ---------- scope tree ---------- */
@@ -408,7 +457,7 @@
     if(tab==='stations') renderStations();
   }
   [].forEach.call(document.querySelectorAll('.tabs [data-tab]'),function(b){ b.addEventListener('click',function(){
-    var tb=b.getAttribute('data-tab'); state.railActive = tb==='stations'?'Stations':'Settings'; showSelfCheck(tb); renderRail(); }); });
+    var tb=b.getAttribute('data-tab'); state.railActive = tb==='stations'?'stations':'settings'; showSelfCheck(tb); renderRail(); }); });
 
   document.getElementById('findToggle').addEventListener('click',function(){ state.findOpen=!state.findOpen;
     document.getElementById('findField').classList.toggle('open',state.findOpen);
@@ -437,11 +486,10 @@
     renderSections();
   }
 
-  function renderSections(){
-    var host=document.getElementById('sections'); host.innerHTML='';
-    var filter=state.filter;
-    D.settings.sections.forEach(function(sec){
-      // gather rows (flat + grouped) for filter test
+  // Generic catalog renderer — used by SelfCheck Settings AND every console area.
+  function renderCatalog(sections, host, filter){
+    host.innerHTML='';
+    sections.forEach(function(sec){
       var flatRows=(sec.rows||[]).slice();
       (sec.groups||[]).forEach(function(g){ g.rows.forEach(function(r){flatRows.push(r);}); });
       var visible = flatRows.filter(function(r){ return !filter || (sec.title+' '+r.label).toLowerCase().indexOf(filter)>=0; });
@@ -464,10 +512,17 @@
       host.appendChild(el);
       el.querySelector('.sec-hd').addEventListener('click',function(){
         if(state.collapsedSections.has(sec.id)) state.collapsedSections.delete(sec.id); else state.collapsedSections.add(sec.id);
-        renderSections();
+        renderCatalog(sections, host, filter);
       });
     });
   }
+  function renderSections(){ renderCatalog(D.settings.sections, document.getElementById('sections'), state.filter); }
+  // Re-render whichever view is active (SelfCheck settings or an area panel).
+  function reRenderActive(){
+    if(document.getElementById('areaPanel').style.display!=='none' && D.areas[state.railActive]) showArea(state.railActive);
+    else render();
+  }
+  function markOverridden(row){ var c=row.querySelector('[data-scope]'); if(c){ c.classList.add('over'); c.textContent='●'; } }
 
   function renderRow(sec, r){
     var node=scopeNode();
@@ -502,34 +557,36 @@
       return row;
     }
 
-    // non-theme rows (display-only, realistic)
-    chev='<button class="scopechev" data-scope aria-label="Scope for this setting">▾</button>';
+    // non-theme rows — interactive + persisted per scope, with inherit/override.
+    var ev=effVal(node.id, r);
+    var val=ev.value;
+    chev='<button class="scopechev '+(ev.own?'over':'')+'" data-scope aria-label="Scope for this setting">'+(ev.own?'●':'▾')+'</button>';
     if(r.type==='toggle'){
-      control='<button class="cbx" role="checkbox" aria-checked="'+!!r.value+'" aria-label="'+r.label+'" data-toggle>'+(r.value?'✓':'')+'</button>';
+      control='<button class="cbx" role="checkbox" aria-checked="'+!!val+'" aria-label="'+r.label+'" data-toggle>'+(val?'✓':'')+'</button>';
     } else if(r.type==='textarea'){
-      control='<div style="width:100%">'+(r.lang?'<div class="lang">'+r.lang+'</div>':'')+'<textarea placeholder="'+(r.lang||'')+' receipt lines">'+(r.value||'')+'</textarea></div>';
+      control='<div style="width:100%">'+(r.lang?'<div class="lang">'+r.lang+'</div>':'')+'<textarea data-input placeholder="'+(r.lang||'')+' lines">'+(val||'')+'</textarea></div>';
+    } else if(r.type==='select'){
+      control='<select class="mini" data-input aria-label="'+r.label+'">'+(r.options||[]).map(function(o){return '<option'+(o===val?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';
     } else if(r.type==='number'){
-      control='<input type="number" value="'+(r.value||'')+'">';
+      control='<input data-input type="number" value="'+(val==null?'':val)+'">';
     } else {
-      control='<input type="text" value="'+(r.value||'')+'" placeholder="'+(r.placeholder||'')+'">';
+      control='<input data-input type="text" value="'+(val==null?'':String(val).replace(/"/g,'&quot;'))+'" placeholder="'+(r.placeholder||'')+'">';
     }
-    var rk='<div class="rk"><div class="k">'+r.label+'</div>'+(r.tip?'<div class="tip">'+r.tip+'</div>':'')+'</div>';
-    if(r.type==='textarea'){ row.innerHTML=chev+rk+'<div class="rc">'+control+'</div>'; }
-    else { row.innerHTML=chev+rk+'<div class="rc">'+control+'</div>'; }
+    var rk='<div class="rk"><div class="k">'+r.label+'</div>'+(r.help?'<div class="help">'+r.help+'</div>':'')+(r.tip?'<div class="tip">'+r.tip+'</div>':'')+'</div>';
+    row.innerHTML=chev+rk+'<div class="rc">'+control+'</div>';
     var tg=row.querySelector('[data-toggle]');
-    if(tg) tg.addEventListener('click',function(){ var on=tg.getAttribute('aria-checked')==='true'; tg.setAttribute('aria-checked',String(!on)); tg.textContent=!on?'✓':''; });
-    row.querySelector('[data-scope]').addEventListener('click',function(e){ openScopeMenu(e.currentTarget, r, node, true); });
+    if(tg) tg.addEventListener('click',function(){ var on=tg.getAttribute('aria-checked')==='true'; setOwn(node.id, r.key, !on); tg.setAttribute('aria-checked',String(!on)); tg.textContent=!on?'✓':''; markOverridden(row); });
+    var inp=row.querySelector('[data-input]');
+    if(inp) inp.addEventListener('change',function(){ setOwn(node.id, r.key, inp.value); markOverridden(row); });
+    row.querySelector('[data-scope]').addEventListener('click',function(e){ openScopeMenu(e.currentTarget, r, node); });
     return row;
   }
 
   var scopeMenu=document.getElementById('scopeMenu');
-  function openScopeMenu(anchor, r, node, displayOnly){
+  function openScopeMenu(anchor, r, node){
     var rect=anchor.getBoundingClientRect();
     scopeMenu.style.left=Math.max(8,rect.left)+'px'; scopeMenu.style.top=(rect.bottom+6)+'px';
-    if(displayOnly){
-      scopeMenu.innerHTML='<div class="mh">'+node.label+'</div><button disabled>Inherited from parent</button>'+
-        '<button disabled>Override here (display-only in demo)</button>';
-    } else {
+    if(r.type==='theme'){
       var k=themeKind(node);
       if(k==='inherit'){ scopeMenu.innerHTML='<div class="mh">'+node.label+'</div><button disabled>Inherited from ROOT</button><button disabled>Override the theme at a branch or station</button>'; }
       else {
@@ -541,6 +598,20 @@
         scopeMenu.querySelector('[data-act="override"]').addEventListener('click',function(){ scopeMenu.classList.remove('open'); state.pickerOpenFor=r.key; render(); });
         var rev=scopeMenu.querySelector('[data-act="revert"]'); if(rev) rev.addEventListener('click',function(){ scopeMenu.classList.remove('open');
           if(k==='root'){ try{localStorage.removeItem('c9sc.theme.root');}catch(e){} } else setThemeAt(node,null); toast('Reverted to inherited'); render(); });
+      }
+    } else {
+      // generic setting: real inherit/override across the scope chain
+      var ev=effVal(node.id, r);
+      var srcLabel = ev.source==='default' ? 'built-in default' : scopeLabel(ev.source);
+      if(ev.own){
+        scopeMenu.innerHTML='<div class="mh">'+r.label+' · '+node.label+'</div>'+
+          '<button disabled>● Overridden at '+node.label+'</button>'+
+          '<button data-act="revert">Revert to inherited</button>';
+        scopeMenu.querySelector('[data-act="revert"]').addEventListener('click',function(){ scopeMenu.classList.remove('open'); clearOwn(node.id,r.key); toast('Reverted to inherited'); reRenderActive(); });
+      } else {
+        scopeMenu.innerHTML='<div class="mh">'+r.label+' · '+node.label+'</div>'+
+          '<button disabled>⌄ Inherited from '+srcLabel+'</button>'+
+          '<button disabled>Edit the control to override here</button>';
       }
     }
     scopeMenu.classList.add('open');
@@ -568,9 +639,9 @@
   window.addEventListener('storage',function(){ render(); if(state.tab==='stations') renderStations(); });
 
   renderPersonaMenu(); applyPersona();
-  // Optional deep-link into a rail area (reviewer convenience): ?area=Account%20Mgmt
+  // Optional deep-link into a rail area (reviewer convenience): ?area=accountmgmt
   var _area=new URLSearchParams(location.search).get('area');
-  if(_area && AREA_INFO[_area]){ routeRail(_area); }
+  if(_area && D.areas[_area]){ state.railActive=_area; showArea(_area); renderRail(); }
 })();
 </script>
 </body>

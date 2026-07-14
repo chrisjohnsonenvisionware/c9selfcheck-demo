@@ -222,6 +222,7 @@
 
 <script src="../workbench-data/c9selfcheck-data.js"></script>
 <script src="../workbench-data/theme-engine.js"></script>
+<script src="../workbench-data/brand.js"></script>
 <script src="../workbench-data/notes-sync.js"></script>
 <script>
 (function(){
@@ -273,9 +274,10 @@
     var cv=document.createElement('canvas'); wrap.appendChild(cv);
     var content=el('<div class="content"></div>');
     var slide=D.promoSlides[state.slide % D.promoSlides.length];
+    var pbVar=(a.textPrimary && a.textPrimary.toLowerCase()==='#ffffff') ? 'light' : 'dark';
     content.innerHTML=
       '<div class="brandwrap">'+
-        '<div class="logo"></div>'+
+        '<div class="logo" style="background:none;box-shadow:none;display:flex;align-items:center;justify-content:center">'+(window.C9BRAND?C9BRAND.pinwheelSVG(56):'')+'</div>'+
         '<div class="libname" style="color:'+a.textPrimary+'">'+D.brand.library+'</div>'+
         '<div class="clock" style="color:'+a.textSecondary+'">'+clock().d+' · '+clock().t+'</div>'+
       '</div>'+
@@ -286,6 +288,7 @@
         '<div class="dots">'+D.promoSlides.map(function(_,i){return '<span class="d'+(i===state.slide%D.promoSlides.length?' on':'')+'"></span>';}).join('')+
           '<button class="pausebtn" data-no-begin aria-label="'+(state.paused?'Play slideshow':'Pause slideshow')+'" aria-pressed="'+state.paused+'">'+(state.paused?'▶':'❚❚')+'</button>'+
         '</div>'+
+        '<div style="margin-top:14px">'+(window.C9BRAND?C9BRAND.poweredBy(pbVar):'')+'</div>'+
       '</div>';
     wrap.appendChild(content);
     app.appendChild(wrap);
@@ -309,7 +312,7 @@
   /* ================= CHROME (topbar + nav) ================= */
   function chrome(inner){
     var c=clock();
-    var top='<div class="topbar"><div class="brand"><span class="logo"></span>'+D.brand.library+'</div>'+
+    var top='<div class="topbar"><div class="brand"><span class="logo" style="background:none;display:inline-flex;align-items:center;justify-content:center">'+(window.C9BRAND?C9BRAND.pinwheelSVG(30):'')+'</span>'+D.brand.library+'</div>'+
       '<div class="clock">'+c.t+'<br><span style="font-size:12px">'+c.d+'</span></div></div>';
     var nav='<div class="bottomnav" role="navigation" aria-label="Kiosk navigation">'+
       '<button data-nav="home"><span class="ic">🏠</span>Home</button>'+

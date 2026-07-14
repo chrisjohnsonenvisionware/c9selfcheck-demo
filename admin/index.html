@@ -76,7 +76,7 @@
 </style>
 </head>
 <body data-surface="Admin console">
-  <div class="topnav"><span class="logo"></span><b>Cloud9 SelfCheck</b><span class="tag">Admin</span>
+  <div class="topnav"><span class="logo" id="brandMark" style="background:none;display:inline-flex;align-items:center;justify-content:center"></span><b>Cloud9 SelfCheck</b><span class="tag">Admin</span>
     <a href="../index.html">← Workbench home</a></div>
   <div class="wrap">
     <div class="crumb" id="crumb"></div>
@@ -126,15 +126,26 @@
         </div>
       </div>
     </div>
+    <div id="poweredBy" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:center"></div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="../workbench-data/brand.js"></script>
 <script src="../workbench-data/c9selfcheck-data.js"></script>
 <script src="../workbench-data/theme-engine.js"></script>
 <script src="../workbench-data/notes-sync.js"></script>
 <script>
 (function(){
   var D=window.C9DATA, T=window.C9Theme;
+
+  // EnvisionWare branding (light background → default/dark wordmark variant)
+  if (window.C9BRAND){
+    var bm=document.getElementById('brandMark');
+    if (bm) bm.innerHTML=C9BRAND.pinwheelSVG(28);
+    var pb=document.getElementById('poweredBy');
+    if (pb) pb.innerHTML=C9BRAND.poweredBy();
+  }
+
   T.ensureSeed(D.seed);
   // scope: {kind:'library'|'branch'|'station', id, libKey (branchId used as override node), stationId}
   var scopes=[];

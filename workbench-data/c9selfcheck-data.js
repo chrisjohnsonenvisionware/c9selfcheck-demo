@@ -235,4 +235,185 @@ window.C9DATA = {
     { s: 'Override a single station', d: 'In Admin, set the Entrance Kiosk (Riverside) to Aurora. It shows Aurora even though its branch has no override.' },
     { s: 'Revert the branch override', d: 'Front Lobby falls back to the ROOT default; the station-level Aurora override still wins on the Entrance Kiosk.' },
   ],
+
+  /* Settings catalogs for the other Web Console areas. Rendered by the same
+   * interactive engine as SelfCheck Settings — every row persists per scope with
+   * an inherit/override chevron. Field sets are realistic (derived from the
+   * product spec corpus + the station's real settings groups) and can be refined
+   * against real console screenshots. `icon` + `blurb` head each area. */
+  areas: {
+    'platform': {
+      icon: '🛠️', title: 'Platform', blurb: 'System-wide platform settings that establish the ROOT defaults every product inherits.',
+      sections: [
+        { id: 'appearance', title: 'Appearance', rows: [
+          { key: 'libDisplayName', label: 'Library display name', type: 'text', value: 'Pioneer Library System' },
+          { key: 'libLogoUrl', label: 'Library logo URL', type: 'path', value: '/assets/branding/logo.png' },
+          { key: 'consoleTheme', label: 'Web Console theme', type: 'select', value: 'System', options: ['Light', 'Dark', 'System'] },
+        ] },
+        { id: 'region', title: 'Region & Languages', rows: [
+          { key: 'defaultLang', label: 'Default language', type: 'select', value: 'English', options: ['English', 'Spanish', 'French', 'German', 'Arabic', 'Chinese (Simplified)'] },
+          { key: 'supportedLangs', label: 'Supported languages', type: 'text', value: 'English, Spanish, French' },
+          { key: 'timeZone', label: 'Time zone', type: 'select', value: 'America/New_York', options: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'] },
+          { key: 'dateFormat', label: 'Date format', type: 'select', value: 'MM/DD/YYYY', options: ['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'] },
+        ] },
+        { id: 'system', title: 'System Information & Connectivity', rows: [
+          { key: 'sip2Host', label: 'SIP2 host', type: 'text', value: 'ils.pioneerlib.org' },
+          { key: 'sip2Port', label: 'SIP2 port', type: 'number', value: '6001' },
+          { key: 'sip2ssl', label: 'SIP2SSL (encrypted transport)', type: 'toggle', value: true },
+        ] },
+      ],
+    },
+    'accountmgmt': {
+      icon: '👤', title: 'Account Management', blurb: 'How patrons authenticate and what they can do with their account at the kiosk.',
+      sections: [
+        { id: 'auth', title: 'Patron Authentication', rows: [
+          { key: 'requirePin', label: 'Require PIN', type: 'toggle', value: true },
+          { key: 'patronIdLabel', label: 'Patron ID label', type: 'text', value: 'Library Card Number' },
+          { key: 'pinLabel', label: 'PIN label', type: 'text', value: 'PIN' },
+          { key: 'maskId', label: 'Mask ID field', type: 'toggle', value: false },
+          { key: 'idKeyboard', label: 'ID keyboard type', type: 'select', value: 'Numeric', options: ['Numeric', 'Alphanumeric'] },
+        ] },
+        { id: 'summary', title: 'Account Summary Receipt', rows: [
+          { key: 'amPrint', label: 'Allow printed summary', type: 'toggle', value: true },
+          { key: 'amEmail', label: 'Allow emailed summary', type: 'toggle', value: true },
+          { key: 'amSms', label: 'Allow SMS summary', type: 'toggle', value: false },
+          { key: 'amIncCheckouts', label: 'Include current checkouts', type: 'toggle', value: true },
+          { key: 'amIncHolds', label: 'Include holds', type: 'toggle', value: true },
+          { key: 'amIncFines', label: 'Include fines & fees', type: 'toggle', value: true },
+        ] },
+        { id: 'selfservice', title: 'Self-Service Actions', rows: [
+          { key: 'ssRenew', label: 'Allow renewals', type: 'toggle', value: true },
+          { key: 'ssCancelHold', label: 'Allow hold cancellation', type: 'toggle', value: true },
+          { key: 'ssPayFines', label: 'Allow fine payment', type: 'toggle', value: true },
+          { key: 'ssMaxRenewals', label: 'Max renewals per item', type: 'number', value: '2' },
+        ] },
+      ],
+    },
+    'reservations': {
+      icon: '🗓️', title: 'Reservation Service', blurb: 'PC and room reservation (CloudNine Reservation) booking rules and session limits.',
+      sections: [
+        { id: 'rules', title: 'Booking Rules', rows: [
+          { key: 'resEnable', label: 'Enable PC reservations', type: 'toggle', value: true },
+          { key: 'resAdvanceDays', label: 'Advance booking window (days)', type: 'number', value: '14' },
+          { key: 'resMaxActive', label: 'Max active bookings per patron', type: 'number', value: '2' },
+          { key: 'resRequireLogin', label: 'Require patron login', type: 'toggle', value: true },
+        ] },
+        { id: 'sessions', title: 'Sessions & Time Limits', rows: [
+          { key: 'resSession', label: 'Default session length (minutes)', type: 'number', value: '60' },
+          { key: 'resDaily', label: 'Daily time limit (minutes)', type: 'number', value: '120' },
+          { key: 'resGrace', label: 'Grace period (minutes)', type: 'number', value: '10' },
+          { key: 'resAutoExtend', label: 'Auto-extend if station is free', type: 'toggle', value: true },
+        ] },
+        { id: 'release', title: 'Release Stations', rows: [
+          { key: 'resRelease', label: 'Enable release station', type: 'toggle', value: true },
+          { key: 'resGuest', label: 'Allow guest passes', type: 'toggle', value: true },
+        ] },
+      ],
+    },
+    'lockers': {
+      icon: '🔐', title: 'Holds Locker Service', blurb: 'Smart-locker configuration for contactless hold pickup.',
+      sections: [
+        { id: 'bays', title: 'Bays', rows: [
+          { key: 'lkTotalBays', label: 'Number of bays', type: 'number', value: '24' },
+          { key: 'lkAssign', label: 'Bay assignment', type: 'select', value: 'Automatic', options: ['Automatic', 'Manual'] },
+          { key: 'lkOversize', label: 'Oversize bay count', type: 'number', value: '4' },
+        ] },
+        { id: 'pickup', title: 'Hold Pickup', rows: [
+          { key: 'lkWindow', label: 'Pickup window (days)', type: 'number', value: '7' },
+          { key: 'lkReminder', label: 'Reminder before expiry (days)', type: 'number', value: '2' },
+          { key: 'lkPin', label: 'Require PIN at locker', type: 'toggle', value: true },
+        ] },
+        { id: 'notify', title: 'Notifications', rows: [
+          { key: 'lkNotifyReady', label: 'Notify when ready', type: 'select', value: 'Email & SMS', options: ['Email', 'SMS', 'Email & SMS', 'None'] },
+          { key: 'lkNotifyExpiring', label: 'Notify when expiring', type: 'toggle', value: true },
+        ] },
+      ],
+    },
+    'print': {
+      icon: '🖨️', title: 'Print Service', blurb: 'Print & release service (powered by Princh) — release rules, pricing, and payment.',
+      sections: [
+        { id: 'release', title: 'Release Rules', rows: [
+          { key: 'prEnable', label: 'Enable print release', type: 'toggle', value: true },
+          { key: 'prHoldHours', label: 'Hold jobs (hours)', type: 'number', value: '24' },
+          { key: 'prAutoDelete', label: 'Auto-delete unclaimed jobs', type: 'toggle', value: true },
+        ] },
+        { id: 'pricing', title: 'Pricing', rows: [
+          { key: 'prCurrency', label: 'Currency', type: 'select', value: 'USD', options: ['USD', 'EUR', 'GBP', 'CAD'] },
+          { key: 'prBw', label: 'B/W per page', type: 'text', value: '0.10' },
+          { key: 'prColor', label: 'Color per page', type: 'text', value: '0.50' },
+          { key: 'prDuplex', label: 'Duplex discount', type: 'toggle', value: true },
+        ] },
+        { id: 'payment', title: 'Payment', rows: [
+          { key: 'prCard', label: 'Accept card', type: 'toggle', value: true },
+          { key: 'prCash', label: 'Accept cash', type: 'toggle', value: false },
+          { key: 'prBalance', label: 'Accept account balance', type: 'toggle', value: true },
+          { key: 'prProvider', label: 'Payment provider', type: 'select', value: 'Princh', options: ['Princh', 'EnvisionWare eCommerce'] },
+        ] },
+      ],
+    },
+    'staff-guests': {
+      icon: '🎟️', title: 'Guests', blurb: 'Issue and track day passes for visitors who need PC or print access.',
+      sections: [
+        { id: 'passes', title: 'Guest Passes', rows: [
+          { key: 'gpEnable', label: 'Enable guest passes', type: 'toggle', value: true },
+          { key: 'gpDuration', label: 'Pass duration (minutes)', type: 'number', value: '60' },
+          { key: 'gpMaxPerDay', label: 'Max passes per day', type: 'number', value: '2' },
+          { key: 'gpRequireId', label: 'Require photo ID', type: 'toggle', value: false },
+          { key: 'gpLabel', label: 'Guest pass label', type: 'text', value: 'Visitor Pass' },
+        ] },
+      ],
+    },
+    'staff-reservations': {
+      icon: '🗂️', title: 'Reservations (Staff)', blurb: 'Staff-side booking management overrides.',
+      sections: [
+        { id: 'staffbook', title: 'Staff Booking', rows: [
+          { key: 'srOverride', label: 'Allow staff overrides', type: 'toggle', value: true },
+          { key: 'srWalkin', label: 'Allow walk-in booking', type: 'toggle', value: true },
+          { key: 'srAllBranches', label: 'Show all branches', type: 'toggle', value: false },
+        ] },
+      ],
+    },
+    'staff-lockers': {
+      icon: '🗄️', title: 'Lockers (Staff)', blurb: 'Staff-side locker operations.',
+      sections: [
+        { id: 'stafflk', title: 'Staff Locker Operations', rows: [
+          { key: 'slManual', label: 'Allow manual assignment', type: 'toggle', value: true },
+          { key: 'slForceOpen', label: 'Allow force-open', type: 'toggle', value: true },
+          { key: 'slOccupancy', label: 'Show live occupancy', type: 'toggle', value: true },
+        ] },
+      ],
+    },
+    'analytics': {
+      icon: '📊', title: 'Analytics', blurb: 'EnvisionWare Analytics (EER) — usage reporting across self-check, reservations, lockers and print.',
+      sections: [
+        { id: 'reporting', title: 'Reporting', rows: [
+          { key: 'anEnable', label: 'Enable analytics', type: 'toggle', value: true },
+          { key: 'anRetention', label: 'Data retention (days)', type: 'number', value: '365' },
+          { key: 'anAnonymize', label: 'Anonymize patron data', type: 'toggle', value: true },
+          { key: 'anDashboard', label: 'Default dashboard', type: 'select', value: 'Overview', options: ['Overview', 'SelfCheck', 'Reservations', 'Lockers', 'Print'] },
+          { key: 'anReportEmail', label: 'Scheduled report recipient', type: 'text', value: 'reports@pioneerlib.org' },
+        ] },
+      ],
+    },
+    'import-pcr': {
+      icon: '⬆️', title: 'Import PCR', techOnly: true, blurb: 'Bulk-load Patron Configuration Records from a file (EnvisionWare technician only).',
+      sections: [
+        { id: 'import', title: 'Import Patron Configuration Records', rows: [
+          { key: 'impSource', label: 'Source file', type: 'path', value: '' },
+          { key: 'impValidate', label: 'Validate before import', type: 'toggle', value: true },
+          { key: 'impOverwrite', label: 'Overwrite existing records', type: 'toggle', value: false },
+        ] },
+      ],
+    },
+    'export-pcr': {
+      icon: '⬇️', title: 'Export PCR', techOnly: true, blurb: 'Export Patron Configuration Records for backup or migration (EnvisionWare technician only).',
+      sections: [
+        { id: 'export', title: 'Export Patron Configuration Records', rows: [
+          { key: 'expStationConfig', label: 'Include station configuration', type: 'toggle', value: true },
+          { key: 'expSettingsTree', label: 'Include settings tree', type: 'toggle', value: true },
+          { key: 'expFormat', label: 'Export format', type: 'select', value: 'JSON', options: ['JSON', 'CSV', 'XML'] },
+        ] },
+      ],
+    },
+  },
 };

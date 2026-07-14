@@ -88,12 +88,12 @@
 <body data-surface="Landing">
 <div class="wrap">
   <header class="hero">
-    <span class="kicker"><span class="dot"></span>Model Workbench</span>
+    <span class="kicker"><span id="brandMark" style="display:inline-flex;align-items:center"></span><span class="dot"></span>Model Workbench</span>
     <h1>Cloud9 RFID SelfCheck</h1>
     <p class="lede">A clickable review artifact for the redesigned self-service kiosk — the new attract screen,
       bigger touch targets, a WCAG 2.2 patron flow, and a configurable theme that professional services and
       libraries both control. This is a design preview, not the shipping product.</p>
-    <p class="powered">Powered by <b>EnvisionWare</b> · fully self-contained · state lives in your browser</p>
+    <p class="powered" id="powered">Powered by <b>EnvisionWare</b> · fully self-contained · state lives in your browser</p>
   </header>
 
   <section>
@@ -125,6 +125,7 @@
   </div>
 </div>
 
+<script src="workbench-data/brand.js"></script>
 <script src="workbench-data/c9selfcheck-data.js"></script>
 <script src="workbench-data/theme-engine.js"></script>
 <script src="workbench-data/notes-sync.js"></script>
@@ -132,6 +133,14 @@
 (function(){
   var D = window.C9DATA, T = window.C9Theme;
   var previewStation = 'st-101';
+
+  // EnvisionWare branding (light background → default/dark wordmark variant)
+  if (window.C9BRAND){
+    var bm = document.getElementById('brandMark');
+    if (bm) bm.innerHTML = C9BRAND.pinwheelSVG(26);
+    var pw = document.getElementById('powered');
+    if (pw) pw.innerHTML = C9BRAND.poweredBy() + ' · fully self-contained · state lives in your browser';
+  }
 
   T.ensureSeed(D.seed);
 
