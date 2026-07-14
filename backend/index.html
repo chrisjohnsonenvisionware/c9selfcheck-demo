@@ -180,6 +180,7 @@
       <div id="treeBody"></div>
     </nav>
     <main class="main">
+      <div id="selfcheckView">
       <div class="tabs" role="tablist">
         <button role="tab" aria-selected="true" data-tab="settings">Settings</button>
         <button role="tab" aria-selected="false" data-tab="stations">Stations</button>
@@ -200,6 +201,8 @@
         <table><thead><tr><th>Station</th><th>Branch</th><th>Group</th><th>Install token</th><th class="newcol">Attract theme <span style="color:#15803d">• new</span></th></tr></thead>
           <tbody id="stationRows"></tbody></table>
       </div>
+      </div><!-- /selfcheckView -->
+      <div id="areaPanel" style="display:none"></div>
     </main>
   </div>
 
@@ -232,9 +235,40 @@
     expanded: new Set(['root','grp-libraries','pioneer','br-main','br-river','grp-consortia']),
     collapsedSections: new Set(),
     tab: 'settings',
+    railActive: 'Settings',
     filter: '',
     findOpen: false,
     pickerOpenFor: null,
+  };
+
+  /* Accurate one-line descriptions of the other Web Console areas (derived from
+   * the product spec corpus + the station's real settings groups). Rendered as
+   * a coherent area panel so every nav item lands somewhere real — no dead ends.
+   * `groups` hints at the setting groups each area contains. */
+  var AREA_INFO = {
+    'Platform': { icon:'🛠️', tagline:'System-wide platform settings',
+      desc:'Appearance (library logo & theme), regional languages, system information and licensing. These establish the ROOT defaults every product inherits.',
+      groups:['Appearance (logo, theme)','Region / languages','System information','Licensing'] },
+    'Reservations': { icon:'🗓️', tagline:'PC & room reservation service',
+      desc:'CloudNine Reservation configuration — booking rules, session lengths, time limits, and release-station behavior.',
+      groups:['Booking rules','Sessions & time limits','Release stations'] },
+    'Lockers': { icon:'🔐', tagline:'Smart locker configuration',
+      desc:'Hold-locker and smart-locker setup — bay assignment, hold pickup, and patron notifications.',
+      groups:['Bays','Hold pickup','Notifications'] },
+    'Account Mgmt': { icon:'👤', tagline:'Patron account management',
+      desc:'The account-summary receipt content and the self-service actions patrons may take (renew, pay fines, view holds).',
+      groups:['Account summary receipt','Self-service actions','Fines & payments'] },
+    'Print': { icon:'🖨️', tagline:'Print & release service',
+      desc:'CloudNine Print / print-release configuration — release rules, pricing, and payment integration.',
+      groups:['Release rules','Pricing','Payment'] },
+    'Guests': { icon:'🎟️', tagline:'Guest & visitor passes',
+      desc:'Issue and track day passes for non-members needing PC or print access.' },
+    'Analytics': { icon:'📊', tagline:'EnvisionWare Analytics (EER)',
+      desc:'Usage dashboards and reporting across self-check, reservations, lockers and print.' },
+    'Import PCR': { icon:'⬆️', tagline:'Import Patron Configuration Records',
+      desc:'Bulk-load patron configuration records from a file (IC Tools, EnvisionWare technician only).' },
+    'Export PCR': { icon:'⬇️', tagline:'Export Patron Configuration Records',
+      desc:'Export patron configuration records for backup or migration (IC Tools, EnvisionWare technician only).' },
   };
 
   function persona(){ return D.personas.find(function(p){return p.id===state.personaId;}); }
@@ -277,14 +311,41 @@
     rail.innerHTML=RAIL.filter(function(g){return !g.ic || showIC;}).map(function(g){
       return '<div class="railgrp"><div class="gh">▾ '+g.group+'</div>'+
         g.items.map(function(it){
-          return '<button class="item'+(it.sub?' sub':'')+(it.active?' active':'')+'" data-rail="'+it.label+'"'+(it.tab?' data-tab="'+it.tab+'"':'')+'>'+it.label+'</button>';
+          var active = it.label===state.railActive;
+          return '<button class="item'+(it.sub?' sub':'')+(active?' active':'')+'" data-rail="'+it.label+'">'+it.label+'</button>';
         }).join('')+'</div>';
     }).join('');
     [].forEach.call(rail.querySelectorAll('[data-rail]'),function(b){ b.addEventListener('click',function(){
-      var tab=b.getAttribute('data-tab');
-      if(tab){ switchTab(tab); }
-      else { toast(b.getAttribute('data-rail')+' — not part of this demo'); }
+      routeRail(b.getAttribute('data-rail'));
     }); });
+  }
+  function routeRail(label){
+    if(label==='SelfCheck' || label==='Settings'){ state.railActive='Settings'; showSelfCheck('settings'); }
+    else if(label==='Stations'){ state.railActive='Stations'; showSelfCheck('stations'); }
+    else { state.railActive=label; showArea(label); }
+    renderRail();
+  }
+  function showSelfCheck(tab){
+    document.getElementById('selfcheckView').style.display='';
+    document.getElementById('areaPanel').style.display='none';
+    switchTab(tab);
+  }
+  function showArea(label){
+    document.getElementById('selfcheckView').style.display='none';
+    var host=document.getElementById('areaPanel'); host.style.display='';
+    var info=AREA_INFO[label]||{icon:'📋',tagline:label,desc:'Part of the Cloud9 Web Console.'};
+    var node=scopeNode();
+    var groupsHtml = info.groups ? '<div style="margin-top:16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:8px">Setting groups in this area</div>'+
+      info.groups.map(function(g){return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f1f5f9"><span class="scopechev" aria-hidden="true">▾</span><span style="font-weight:600;color:#1f2937">'+g+'</span></div>';}).join('')+'</div>' : '';
+    host.innerHTML=
+      '<div class="mainhead"><h1>'+info.icon+' '+label+'</h1></div>'+
+      '<p class="scopectx">Editing <b>'+node.label+'</b> · '+info.tagline+'.</p>'+
+      '<div class="section" style="padding:22px"><div style="font-size:15px;color:#334155;max-width:64ch;line-height:1.55">'+info.desc+'</div>'+
+      groupsHtml+
+      '<div style="margin-top:18px;padding:14px 16px;background:#f8fbfe;border:1px dashed #cbd5e1;border-radius:10px;font-size:13.5px;color:#475569">'+
+        '<b>Workbench status:</b> this build focuses on the interactive <b>SelfCheck → Settings</b> area (left). '+
+        'This area is shown to place SelfCheck in the real console. It can be built out to the same interactive fidelity once the real screens are provided.'+
+      '</div></div>';
   }
 
   /* ---------- scope tree ---------- */
@@ -346,7 +407,8 @@
     document.getElementById('tabStations').style.display = tab==='stations'?'':'none';
     if(tab==='stations') renderStations();
   }
-  [].forEach.call(document.querySelectorAll('.tabs [data-tab]'),function(b){ b.addEventListener('click',function(){ switchTab(b.getAttribute('data-tab')); }); });
+  [].forEach.call(document.querySelectorAll('.tabs [data-tab]'),function(b){ b.addEventListener('click',function(){
+    var tb=b.getAttribute('data-tab'); state.railActive = tb==='stations'?'Stations':'Settings'; showSelfCheck(tb); renderRail(); }); });
 
   document.getElementById('findToggle').addEventListener('click',function(){ state.findOpen=!state.findOpen;
     document.getElementById('findField').classList.toggle('open',state.findOpen);
@@ -506,6 +568,9 @@
   window.addEventListener('storage',function(){ render(); if(state.tab==='stations') renderStations(); });
 
   renderPersonaMenu(); applyPersona();
+  // Optional deep-link into a rail area (reviewer convenience): ?area=Account%20Mgmt
+  var _area=new URLSearchParams(location.search).get('area');
+  if(_area && AREA_INFO[_area]){ routeRail(_area); }
 })();
 </script>
 </body>
